@@ -1,0 +1,100 @@
+# OpenClaw agent configuration for the Shopify Store Factory.
+#
+# Copy to your local OpenClaw config location and adjust paths.
+# The exact schema depends on your OpenClaw version — verify against
+# `openclaw --help` and the OpenClaw docs for your release.
+#
+# Key idea: cheap models do the bulk work, an expensive model handles
+# architecture and troubleshooting.
+
+agent:
+  name: shopify-store-factory
+  workspace: /absolute/path/to/clawcode-master-shopify
+  instructions: AGENTS.md
+
+# --- Models ---------------------------------------------------------------
+# All of these speak the OpenAI-compatible API, so one code path works
+# for all of them. Swap by changing provider/model.
+models:
+  # Bulk generation: product copy, SEO, emails, legal drafts. FREE tier.
+  default:
+    provider: gemini
+    model: gemini-2.5-flash-lite
+    api_key_env: GEMINI_API_KEY
+
+  # Overflow when the free tier is exhausted. Very cheap, very fast.
+  bulk:
+    provider: openai-compatible
+    base_url: https://api.groq.com/openai/v1
+    model: llama-3.1-8b-instant
+    api_key_env: GROQ_API_KEY
+
+  # Long-context work with prompt caching (keep the system prompt stable).
+  reasoning:
+    provider: openai-compatible
+    base_url: https://api.deepseek.com/v1
+    model: deepseek-chat
+    api_key_env: DEEPSEEK_API_KEY
+
+  # Zero-cost drafts on your own machine. No tokens billed.
+  local:
+    provider: openai-compatible
+    base_url: http://localhost:11434/v1
+    model: qwen2.5:14b
+    api_key_env: OLLAMA_API_KEY
+
+  # Only for architecture and debugging. Expensive, use sparingly.
+  architect:
+    provider: anthropic
+    model: claude-sonnet-4-5
+    api_key_env: ANTHROPIC_API_KEY
+
+routing:
+  # Which model handles which kind of work.
+  default: default
+  bulk_copy: bulk
+  long_context: reasoning
+  drafts: local
+  architecture: architect
+
+# --- Plugins --------------------------------------------------------------
+# The official Shopify plugin gives the agent docs, API schemas,
+# GraphQL/Liquid validation, and store management.
+#
+#   openclaw plugins install npm:@shopify/ai-toolkit
+#
+# Then confirm it is loaded:
+plugins:
+  shopify:
+    package: "@shopify/ai-toolkit"
+    enabled: true
+
+# --- Tools ----------------------------------------------------------------
+tools:
+  shell:
+    enabled: true
+    # The agent runs the scripts in scripts/. Keep the allowlist tight.
+    allow:
+      - "node scripts/validate-config.mjs *"
+      - "node scripts/build-store.mjs *"
+      - "node scripts/gen-products.mjs *"
+      - "node scripts/gen-legal.mjs *"
+      - "node scripts/qa-check.mjs *"
+      - "node scripts/push-theme.mjs *"
+      - "node scripts/import-products.mjs *"
+      - "npx shopify theme *"
+      - "npx shopify store *"
+  files:
+    enabled: true
+    read: true
+    write: true
+
+# --- Safety ---------------------------------------------------------------
+safety:
+  # Never let the agent touch secrets or publish to a live store.
+  deny_reads:
+    - ".env"
+    - "clients/*/private/**"
+  require_confirmation:
+    - "npx shopify theme publish *"
+    - "npx shopify theme push --live *"

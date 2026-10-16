@@ -1,0 +1,104 @@
+{
+  "client": {
+    "slug": "example-firm",
+    "legalName": "Примерна Фирма ЕООД",
+    "displayName": "Примерна Фирма",
+    "locale": "bg-BG",
+    "country": "BG",
+    "currency": "EUR",
+    "email": "info@example.bg",
+    "phone": "+359 88 000 0000",
+    "vatId": "BG000000000",
+    "eik": "000000000",
+    "address": {
+      "street": "ул. Примерна 1",
+      "city": "София",
+      "postalCode": "1000",
+      "country": "BG"
+    }
+  },
+  "brand": {
+    "tagline": "Качество, на което можеш да разчиташ",
+    "primaryColor": "#0f4c81",
+    "secondaryColor": "#f4a261",
+    "logo": "clients/example-firm/logo.png",
+    "tone": "приятелски, ясен, без клишета"
+  },
+  "store": {
+    "domain": "example-firm.myshopify.com",
+    "niche": "Домашни потреби и подаръци",
+    "targetAudience": "Семейства в България, 25-55 г.",
+    "usps": [
+      "Безплатна доставка над 100 лв.",
+      "Доставка за 1-2 работни дни",
+      "Връщане в рамките на 14 дни"
+    ]
+  },
+  "products": [
+    {
+      "handle": "example-product-1",
+      "title": "Примерен продукт 1",
+      "price": 49.9,
+      "compareAtPrice": 69.9,
+      "sku": "EX-001",
+      "stock": 25,
+      "category": "Дом",
+      "shortDescription": "Кратко описание в едно изречение.",
+      "description": "Пълно описание. Ползи, материали, размери, грижа.",
+      "tags": ["дом", "подарък"],
+      "images": ["clients/example-firm/products/1-1.jpg"],
+      "variants": [
+        { "option": "Цвят", "value": "Син", "price": 49.9, "sku": "EX-001-BL" },
+        { "option": "Цвят", "value": "Червен", "price": 49.9, "sku": "EX-001-RD" }
+      ]
+    },
+    {
+      "handle": "example-product-2",
+      "title": "Примерен продукт 2",
+      "price": 29.9,
+      "sku": "EX-002",
+      "stock": 40,
+      "category": "Подаръци",
+      "shortDescription": "Още едно кратко описание.",
+      "description": "Пълно описание на втория продукт.",
+      "tags": ["подарък"],
+      "images": ["clients/example-firm/products/2-1.jpg"]
+    }
+  ],
+  "collections": [
+    {
+      "handle": "dom",
+      "title": "Дом",
+      "description": "Всичко за дома.",
+      "products": ["example-product-1"]
+    },
+    {
+      "handle": "podaraci",
+      "title": "Подаръци",
+      "description": "Идеи за подарък.",
+      "products": ["example-product-1", "example-product-2"]
+    }
+  ],
+  "payments": {
+    "methods": ["card", "cod", "bank_transfer"],
+    "manualInstructions": "Плащане с наложен платеж при доставка."
+  },
+  "shipping": {
+    "carriers": ["econt", "speedy"],
+    "freeOver": 100,
+    "zones": [
+      { "name": "България", "countries": ["BG"], "rate": 5.99 },
+      { "name": "ЕС", "countries": ["DE", "GR", "RO"], "rate": 14.99 }
+    ]
+  },
+  "legal": {
+    "jurisdiction": "BG",
+    "returnDays": 14
+  },
+  "integrations": {
+    "ga4": "",
+    "metaPixel": "",
+    "tiktokPixel": "",
+    "merchantCenter": false
+  }
+}

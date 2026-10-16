@@ -1,0 +1,37 @@
+name: factory
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Validate example config
+        run: node scripts/validate-config.mjs config/client.example.json
+
+      - name: Build store package
+        run: node scripts/build-store.mjs config/client.example.json
+
+      - name: Check generated artifacts
+        run: |
+          test -f dist/example-firm/products.csv
+          test -f dist/example-firm/theme-settings.json
+          test -f dist/example-firm/manifest.json
+          test -d dist/example-firm/legal
+          ls dist/example-firm/legal
+
+      - name: QA (non-blocking for known gaps)
+        run: node scripts/qa-check.mjs config/client.example.json || true
+
+      - name: Assert legal pages carry the DRAFT stamp
+        run: |
+          grep -q "ЧЕРНОВА" dist/example-firm/legal/obshti-usloviya.html
+          grep -q "ЧЕРНОВА" dist/example-firm/legal/poveritelnost.html

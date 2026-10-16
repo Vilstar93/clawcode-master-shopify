@@ -1,0 +1,147 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Vilstar93/clawcode-master-shopify/config/client.schema.json",
+  "title": "Client config",
+  "type": "object",
+  "required": ["client", "brand", "store", "products"],
+  "properties": {
+    "client": {
+      "type": "object",
+      "required": ["slug", "legalName", "displayName", "locale", "country", "currency", "email"],
+      "properties": {
+        "slug": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{1,40}$" },
+        "legalName": { "type": "string" },
+        "displayName": { "type": "string" },
+        "locale": { "type": "string", "default": "bg-BG" },
+        "country": { "type": "string", "default": "BG" },
+        "currency": { "type": "string", "default": "EUR" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "vatId": { "type": "string" },
+        "eik": { "type": "string" },
+        "address": {
+          "type": "object",
+          "properties": {
+            "street": { "type": "string" },
+            "city": { "type": "string" },
+            "postalCode": { "type": "string" },
+            "country": { "type": "string" }
+          }
+        }
+      }
+    },
+    "brand": {
+      "type": "object",
+      "required": ["tagline", "primaryColor"],
+      "properties": {
+        "tagline": { "type": "string" },
+        "primaryColor": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+        "secondaryColor": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+        "logo": { "type": "string" },
+        "tone": { "type": "string", "description": "Voice for generated copy" }
+      }
+    },
+    "store": {
+      "type": "object",
+      "required": ["domain", "niche"],
+      "properties": {
+        "domain": { "type": "string" },
+        "niche": { "type": "string" },
+        "targetAudience": { "type": "string" },
+        "usps": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "products": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["handle", "title", "price"],
+        "properties": {
+          "handle": { "type": "string" },
+          "title": { "type": "string" },
+          "price": { "type": "number", "description": "End price incl. VAT" },
+          "compareAtPrice": { "type": "number" },
+          "sku": { "type": "string" },
+          "stock": { "type": "integer", "default": 0 },
+          "category": { "type": "string" },
+          "shortDescription": { "type": "string" },
+          "description": { "type": "string" },
+          "tags": { "type": "array", "items": { "type": "string" } },
+          "images": { "type": "array", "items": { "type": "string" } },
+          "variants": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "option": { "type": "string" },
+                "value": { "type": "string" },
+                "price": { "type": "number" },
+                "sku": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "collections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["handle", "title"],
+        "properties": {
+          "handle": { "type": "string" },
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "products": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "payments": {
+      "type": "object",
+      "properties": {
+        "methods": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "e.g. card, cod, bank_transfer, cash_on_delivery"
+        },
+        "manualInstructions": { "type": "string" }
+      }
+    },
+    "shipping": {
+      "type": "object",
+      "properties": {
+        "carriers": { "type": "array", "items": { "type": "string" } },
+        "freeOver": { "type": "number" },
+        "zones": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "countries": { "type": "array", "items": { "type": "string" } },
+              "rate": { "type": "number" }
+            }
+          }
+        }
+      }
+    },
+    "legal": {
+      "type": "object",
+      "properties": {
+        "jurisdiction": { "type": "string", "default": "BG" },
+        "returnDays": { "type": "integer", "default": 14 },
+        "generatedAt": { "type": "string" }
+      }
+    },
+    "integrations": {
+      "type": "object",
+      "properties": {
+        "ga4": { "type": "string" },
+        "metaPixel": { "type": "string" },
+        "tiktokPixel": { "type": "string" },
+        "merchantCenter": { "type": "boolean", "default": false }
+      }
+    }
+  }
+}

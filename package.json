@@ -1,0 +1,20 @@
+{
+  "name": "clawcode-master-shopify",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Autonomous AI factory that builds complete, payment-ready Shopify stores from a single client config.",
+  "scripts": {
+    "validate": "node scripts/validate-config.mjs",
+    "build": "node scripts/build-store.mjs",
+    "products": "node scripts/gen-products.mjs",
+    "legal": "node scripts/gen-legal.mjs",
+    "push": "node scripts/push-theme.mjs",
+    "import": "node scripts/import-products.mjs",
+    "qa": "node scripts/qa-check.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT"
+}
