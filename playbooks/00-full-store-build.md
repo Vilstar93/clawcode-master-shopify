@@ -69,17 +69,19 @@ Produces `dist/<slug>/` with `products.csv`, `legal/`, `theme-settings.json`,
 
 ## Phase 6 — Commerce
 
-**Goal:** the store can take money.
+**Goal:** the store can take money and has its own domain.
 
 This phase is **human-driven**. The agent prepares and instructs; it does not
 enter credentials.
 
-1. Payment provider: the human enables it in the Shopify admin.
-2. Shipping: the human creates rates from `config.shipping`.
-3. Taxes: the human confirms tax settings.
-4. Checkout: the human reviews checkout settings.
+1. Domain: buy or connect it in Shopify admin (Settings → Domains).
+   No third-party DNS or proxy. See `docs/07-domain-and-hosting.md`.
+2. Payment provider: the human enables it in the Shopify admin.
+3. Shipping: the human creates rates from `config.shipping`.
+4. Taxes: the human confirms tax settings.
+5. Checkout: the human reviews checkout settings.
 
-**Exit:** the human confirms payment and shipping work.
+**Exit:** domain resolves over TLS, and the human confirms payment and shipping work.
 
 ## Phase 7 — Engage
 

@@ -22,6 +22,12 @@ config/<client>.json  ->  scripts/build-store.mjs  ->  dist/<client>/
 You supply one config file and the client's images. The agent reads `docs/`,
 follows `playbooks/00-full-store-build.md`, and runs `scripts/`.
 
+**New here? Start with [`AGENT-BUILD.md`](AGENT-BUILD.md)** — how to stand up
+the autonomous agent, and how to get the most out of a ChatGPT Plus plan.
+
+Hosting and DNS are Shopify-only. No Cloudflare, no third-party proxy.
+See `docs/07-domain-and-hosting.md`.
+
 ## Quick start
 
 ```bash
@@ -53,8 +59,9 @@ node scripts/build-store.mjs    config/my-client.json
 
 | Path | Purpose |
 | --- | --- |
+| `AGENT-BUILD.md` | Build the autonomous agent + maximize ChatGPT Plus. |
 | `AGENTS.md` | Agent operating manual. Read first. |
-| `docs/` | Knowledge base: Shopify, payments, shipping, AI providers, OpenClaw. |
+| `docs/` | Knowledge base: Shopify, payments, shipping, AI providers, OpenClaw, domains. |
 | `playbooks/` | Step-by-step procedures. |
 | `prompts/` | The one-shot command prompt and the system prompt. |
 | `config/` | JSON schema and example client config. |
