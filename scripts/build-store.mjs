@@ -6,6 +6,8 @@ import { fileURLToPath } from 'node:url';
 import { loadAndValidate } from './validate-config.mjs';
 import { productsToCsv } from './gen-products.mjs';
 import { generateLegal } from './gen-legal.mjs';
+import { generateLanding } from './gen-landing.mjs';
+import { generateHandoff } from './gen-handoff.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -52,6 +54,16 @@ export function buildStore(config) {
         cpSync(assets, resolve(outDir, 'assets'), { recursive: true });
         steps.push('assets/');
     }
+
+    // 6. Landing package (optional second output)
+    if (config.store?.type === 'landing' || config.build?.landing) {
+        const { written } = generateLanding(config);
+        steps.push(`landing/ (${written.length} file(s))`);
+    }
+
+    // 7. Handoff document, filled from QA results
+    const { failed } = generateHandoff(config, { preparedFor: config.client.legalName });
+    steps.push(`HANDOFF.md${failed ? ` (${failed} blocker(s))` : ''}`);
 
     return { outDir, steps };
 }

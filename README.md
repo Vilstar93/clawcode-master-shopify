@@ -51,9 +51,37 @@ node scripts/build-store.mjs    config/my-client.json
 | `node scripts/build-store.mjs <config>` | Build the full store package |
 | `node scripts/gen-products.mjs <config>` | Generate import CSV only |
 | `node scripts/gen-legal.mjs <config>` | Generate legal pages only |
+| `node scripts/gen-landing.mjs <config>` | Render landing + Shopify checkout |
+| `node scripts/gen-handoff.mjs <config>` | Write the client handoff document |
 | `node scripts/push-theme.mjs <config>` | Push theme unpublished |
 | `node scripts/import-products.mjs <config>` | Import products via Admin API |
 | `node scripts/qa-check.mjs <config>` | Pre-handoff verification |
+
+## Two store types
+
+Set `store.type` in the config:
+
+| Type | Output | Checkout |
+| --- | --- | --- |
+| `store` (default) | Full storefront package | Shopify storefront |
+| `landing` | One-page bundle + serverless function | Shopify cart permalink, no API token |
+
+A landing store is a fast path: one conversion page, Shopify's own hosted
+checkout, nothing to leak. See `docs/08-store-types.md`.
+
+## Deliverables
+
+Every build produces `dist/<slug>/`:
+
+```
+products.csv           Shopify bulk import file
+legal/                 5 Bulgarian legal pages, stamped DRAFT
+theme-settings.json    Brand + navigation payload
+manifest.json          Build metadata
+HANDOFF.md             Client delivery document, filled from QA results
+landing/               (landing type) deployable bundle
+assets/                Client images
+```
 
 ## Repository map
 
@@ -67,6 +95,8 @@ node scripts/build-store.mjs    config/my-client.json
 | `config/` | JSON schema and example client config. |
 | `scripts/` | Executable automation. Zero dependencies. |
 | `templates/legal-bg/` | Bulgarian legal page templates. |
+| `templates/landing/` | Landing + Shopify checkout template. |
+| `templates/handoff/` | Client handoff document template. |
 | `openclaw/` | Agent config and skills. |
 | `clients/` | Per-client assets (images, logos). |
 | `theme/` | Master theme (Dawn subtree). |

@@ -9,6 +9,15 @@ Given `config/<client>.json` and assets in `clients/<slug>/`, produce a live sto
 with: theme, products, collections, navigation, legal pages, payment settings,
 shipping zones, email notifications, and analytics.
 
+Two store types exist. Set `store.type`:
+
+- `store` — a full Shopify storefront (default).
+- `landing` — a single conversion page that hands off to Shopify checkout
+  through a cart permalink. No API token. See `docs/08-store-types.md`.
+
+Domain and hosting are **Shopify only**. Never introduce a CDN, proxy, or
+third-party DNS layer. See `docs/07-domain-and-hosting.md`.
+
 ## Non-negotiable rules
 
 1. **Read before you act.** Read `docs/` and the matching `playbooks/` file first.
@@ -44,10 +53,12 @@ See `openclaw/skills/`. Each skill has a `SKILL.md` with triggers and steps.
 | Skill | Use when |
 | --- | --- |
 | `shopify-store-build` | Full store from scratch |
+| `shopify-landing` | One-page store with Shopify checkout |
 | `shopify-products` | Bulk product copy and import |
 | `shopify-theme` | Theme settings, sections, push |
 | `shopify-legal-bg` | Bulgarian legal pages |
 | `shopify-qa` | Pre-handoff verification |
+| `shopify-handoff` | Write the client delivery document |
 
 ## Scripts you may run
 
@@ -57,6 +68,8 @@ See `openclaw/skills/`. Each skill has a `SKILL.md` with triggers and steps.
 | `scripts/build-store.mjs` | Generate the store package |
 | `scripts/gen-products.mjs` | Build product CSV for bulk import |
 | `scripts/gen-legal.mjs` | Generate legal pages from templates |
+| `scripts/gen-landing.mjs` | Render the landing + checkout package |
+| `scripts/gen-handoff.mjs` | Write the client handoff document |
 | `scripts/push-theme.mjs` | Push theme to Shopify (unpublished) |
 | `scripts/import-products.mjs` | Import products via Admin API |
 | `scripts/qa-check.mjs` | Run pre-handoff checks |

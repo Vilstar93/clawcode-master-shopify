@@ -26,6 +26,8 @@
   },
   "store": {
     "domain": "example-firm.myshopify.com",
+    "type": "landing",
+    "heroImage": "clients/example-firm/hero.png",
     "niche": "Домашни потреби и подаръци",
     "targetAudience": "Семейства в България, 25-55 г.",
     "usps": [
@@ -41,12 +43,13 @@
       "price": 49.9,
       "compareAtPrice": 69.9,
       "sku": "EX-001",
+      "variantId": "59905305018713",
       "stock": 25,
       "category": "Дом",
       "shortDescription": "Кратко описание в едно изречение.",
       "description": "Пълно описание. Ползи, материали, размери, грижа.",
       "tags": ["дом", "подарък"],
-      "images": ["clients/example-firm/products/1-1.jpg"],
+      "images": ["clients/example-firm/products/1-1.png"],
       "variants": [
         { "option": "Цвят", "value": "Син", "price": 49.9, "sku": "EX-001-BL" },
         { "option": "Цвят", "value": "Червен", "price": 49.9, "sku": "EX-001-RD" }
@@ -62,7 +65,7 @@
       "shortDescription": "Още едно кратко описание.",
       "description": "Пълно описание на втория продукт.",
       "tags": ["подарък"],
-      "images": ["clients/example-firm/products/2-1.jpg"]
+      "images": ["clients/example-firm/products/2-1.png"]
     }
   ],
   "collections": [

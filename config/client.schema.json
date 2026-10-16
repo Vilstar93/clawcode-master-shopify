@@ -46,6 +46,9 @@
       "required": ["domain", "niche"],
       "properties": {
         "domain": { "type": "string" },
+        "plan": { "type": "string" },
+        "type": { "type": "string", "enum": ["store", "landing"], "default": "store" },
+        "heroImage": { "type": "string" },
         "niche": { "type": "string" },
         "targetAudience": { "type": "string" },
         "usps": { "type": "array", "items": { "type": "string" } }
@@ -63,6 +66,7 @@
           "price": { "type": "number", "description": "End price incl. VAT" },
           "compareAtPrice": { "type": "number" },
           "sku": { "type": "string" },
+          "variantId": { "type": "string", "description": "Shopify numeric variant id, for landing checkout" },
           "stock": { "type": "integer", "default": 0 },
           "category": { "type": "string" },
           "shortDescription": { "type": "string" },

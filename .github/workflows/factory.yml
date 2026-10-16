@@ -25,8 +25,23 @@ jobs:
           test -f dist/example-firm/products.csv
           test -f dist/example-firm/theme-settings.json
           test -f dist/example-firm/manifest.json
+          test -f dist/example-firm/HANDOFF.md
           test -d dist/example-firm/legal
           ls dist/example-firm/legal
+
+      - name: Check landing bundle renders with no placeholders
+        run: |
+          test -f dist/example-firm/landing/index.html
+          test -f dist/example-firm/landing/api/buy.js
+          if grep -q '{{' dist/example-firm/landing/index.html; then
+            echo "Unrendered placeholder in landing output"; exit 1
+          fi
+
+      - name: Check handoff has no placeholders
+        run: |
+          if grep -q '{{' dist/example-firm/HANDOFF.md; then
+            echo "Unrendered placeholder in handoff"; exit 1
+          fi
 
       - name: QA (non-blocking for known gaps)
         run: node scripts/qa-check.mjs config/client.example.json || true

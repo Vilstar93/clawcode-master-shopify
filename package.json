@@ -9,6 +9,8 @@
     "build": "node scripts/build-store.mjs",
     "products": "node scripts/gen-products.mjs",
     "legal": "node scripts/gen-legal.mjs",
+    "landing": "node scripts/gen-landing.mjs",
+    "handoff": "node scripts/gen-handoff.mjs",
     "push": "node scripts/push-theme.mjs",
     "import": "node scripts/import-products.mjs",
     "qa": "node scripts/qa-check.mjs"
