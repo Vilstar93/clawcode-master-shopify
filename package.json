@@ -13,7 +13,8 @@
     "handoff": "node scripts/gen-handoff.mjs",
     "push": "node scripts/push-theme.mjs",
     "import": "node scripts/import-products.mjs",
-    "qa": "node scripts/qa-check.mjs"
+    "qa": "node scripts/qa-check.mjs",
+    "test": "node --test scripts/lib/*.test.mjs"
   },
   "engines": {
     "node": ">=20"

@@ -17,6 +17,9 @@ jobs:
       - name: Validate example config
         run: node scripts/validate-config.mjs config/client.example.json
 
+      - name: Unit tests (ЕИК and VIES)
+        run: node --test scripts/lib/*.test.mjs
+
       - name: Build store package
         run: node scripts/build-store.mjs config/client.example.json
 
