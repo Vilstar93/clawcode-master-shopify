@@ -88,3 +88,49 @@ Stop and ask the human when:
 
 Client-facing content follows the client's `locale` (default `bg-BG`).
 Internal docs and commit messages are in English.
+
+## Verified external constraints
+
+These were established by direct testing, not assumption. Re-check before
+relying on them, but do not re-derive them from scratch.
+
+**ЕИК checksum works.** `scripts/lib/eik.mjs`. 9-digit: weighted sum of digits
+1-8 with weights 1..8, modulo 11; if the result is 10 a second pass uses
+weights 3,4,5,6,7,8,9,10; a further 10 becomes 0. Compare against digit 9.
+13-digit branch form validates the leading 9, then digit 13 over digits 1-12.
+Verified against 10 ЕИКs from registri.bg: all pass.
+
+An earlier note in `ANALIZ-VZGPLATTFORM.md` claimed the algorithm could not be
+validated because it failed 8 of 16 test numbers. That was wrong. The numbers
+came from web search and were unreliable, not the algorithm. Corrected.
+
+**A Bulgarian VAT number is `BG` + ЕИК.** `normalizeVatId` in `eik.mjs`.
+
+**VIES works without a key but sends no CORS header.** It cannot be called from
+a browser; proxy it server-side. `MS_UNAVAILABLE` and `MS_MAX_CONCURRENT_REQ`
+mean the service could not answer — never treat them as "invalid", or a busy
+VIES will reject real companies. `MS_UNAVAILABLE` was observed live for DE.
+
+**Affiliate `sharedid` must not be overwritten.** The operator link is
+`https://shopify.pxf.io/7950557-link?sharedid=7950557` (Impact.com). Building
+the URL with `searchParams.set(subIdParam, ...)` replaces an existing value, so
+configuring `subIdParam` as `sharedid` destroys the operator's identifier.
+Reproduced. Use `append` with a separate parameter (`subId1`).
+
+**Data sources that work and do not.** `registri.bg` returns 200 and serves the
+Commercial Register data server-rendered with JSON-LD. `papagal.bg` returns 403
+(Cloudflare). `data.egov.bg` returns 403. There is no public API for the Trade
+Registry; registri.bg republishes the official open data.
+
+**The GitHub token cannot create repositories.** `POST /user/repos` returns 403
+(`Resource not accessible by integration`). It can push to repositories that
+already exist. New repos must be created by hand.
+
+## Related repositories
+
+- `Vilstar93/LandingShopi` — the public request portal. Separate repo, on
+  purpose: this one is a revenue-bearing asset and is intended to become
+  private once the factory is settled.
+- `tarifberatung24-blip/VZGplattform` — reference implementation. Its affiliate
+  layer (`lib/affiliate-offers.ts`, `app/go/[offer]/route.ts`) is the model, but
+  see the `sharedid` note above before copying its URL building.
