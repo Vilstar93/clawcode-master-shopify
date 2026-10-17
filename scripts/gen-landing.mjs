@@ -25,88 +25,140 @@ function assetPath(p, slug) {
     return '/' + (rel.startsWith(prefix) ? 'assets/' + rel.slice(prefix.length) : rel);
 }
 
+function assetExists(p, slug) {
+    const rel = String(p || '').replace(/^\/+/, '');
+    return rel ? existsSync(resolve(root, rel)) : false;
+}
+
+// Join word and fallback carrier differ per language, so the subheadline reads
+// as a sentence in each one rather than a translated fragment.
+const CARRIER_JOIN = { bg: ' или ', en: ' or ', de: ' oder ' };
+const CARRIER_DEFAULT = { bg: 'куриер', en: 'courier', de: 'Paketdienst' };
+
+const STRINGS = {
+    bg: {
+        eyebrow: 'Онлайн магазин',
+        subheadline: (carriers) => `Поръчайте директно онлайн. Плащане с карта или наложен платеж. Доставка с ${carriers}.`,
+        ctaPrimary: 'Разгледай продуктите',
+        ctaSecondary: 'Как да поръчам',
+        productsTitle: 'Продукти',
+        productsSub: 'Изберете продукт и завършете поръчката в защитения Shopify checkout.',
+        howTitle: 'Как да поръчам',
+        howSub: 'Три стъпки, без регистрация.',
+        howStep1Title: '1. Избирате',
+        howStep1Text: 'Натискате „Купи сега“ на избрания продукт.',
+        howStep2Title: '2. Плащате',
+        howStep2Text: 'Попълвате адрес и плащате в защитения checkout.',
+        howStep3Title: '3. Получавате',
+        howStep3Text: 'Доставяме с куриер за 1–2 работни дни.',
+        faqTitle: 'Въпроси',
+        faqSub: 'Най-често задаваните.',
+        navProducts: 'Продукти',
+        navHow: 'Как да поръчам',
+        navFaq: 'Въпроси',
+        navContact: 'Контакти',
+        legalTitle: 'Документи',
+        lTerms: 'Общи условия',
+        lPrivacy: 'Политика за поверителност',
+        lWithdrawal: 'Право на отказ',
+        lShipping: 'Доставка и плащане',
+        legalRights: 'Всички права запазени.',
+        buyLoading: 'Моля изчакайте…',
+        buyError: 'Поръчката не можа да започне. Опитайте отново.',
+        buyNow: 'Купи сега',
+        msgMethodNotAllowed: 'Методът не е разрешен.',
+        msgUnknownProduct: 'Неизвестен продукт.',
+        msgNoVariant: 'Продуктът не е свързан с Shopify.',
+        msgCheckoutFailed: 'Checkout-ът не можа да започне. Опитайте отново.'
+    },
+    en: {
+        eyebrow: 'Online shop',
+        subheadline: (carriers) => `Order online. Card or cash on delivery. Shipped with ${carriers}.`,
+        ctaPrimary: 'See products',
+        ctaSecondary: 'How to order',
+        productsTitle: 'Products',
+        productsSub: 'Pick a product and finish in Shopify secure checkout.',
+        howTitle: 'How to order',
+        howSub: 'Three steps, no account needed.',
+        howStep1Title: '1. Choose',
+        howStep1Text: 'Click "Buy now" on the product you want.',
+        howStep2Title: '2. Pay',
+        howStep2Text: 'Enter your address and pay in the secure checkout.',
+        howStep3Title: '3. Receive',
+        howStep3Text: 'We ship within 1-2 business days.',
+        faqTitle: 'Questions',
+        faqSub: 'Frequently asked.',
+        navProducts: 'Products',
+        navHow: 'How to order',
+        navFaq: 'FAQ',
+        navContact: 'Contact',
+        legalTitle: 'Documents',
+        lTerms: 'Terms',
+        lPrivacy: 'Privacy policy',
+        lWithdrawal: 'Right of withdrawal',
+        lShipping: 'Shipping and payment',
+        legalRights: 'All rights reserved.',
+        buyLoading: 'Please wait…',
+        buyError: 'Could not start the order. Please try again.',
+        buyNow: 'Buy now',
+        msgMethodNotAllowed: 'Method not allowed.',
+        msgUnknownProduct: 'Unknown product.',
+        msgNoVariant: 'Product is not linked to Shopify.',
+        msgCheckoutFailed: 'Checkout could not start. Please try again.'
+    },
+    de: {
+        eyebrow: 'Online-Shop',
+        subheadline: (carriers) => `Bestellen Sie online. Zahlung per Karte oder Nachnahme. Versand mit ${carriers}.`,
+        ctaPrimary: 'Produkte ansehen',
+        ctaSecondary: 'So bestellen Sie',
+        productsTitle: 'Produkte',
+        productsSub: 'Produkt wählen und im sicheren Shopify-Checkout abschließen.',
+        howTitle: 'So bestellen Sie',
+        howSub: 'Drei Schritte, kein Konto nötig.',
+        howStep1Title: '1. Auswählen',
+        howStep1Text: 'Klicken Sie beim gewünschten Produkt auf „Jetzt kaufen“.',
+        howStep2Title: '2. Bezahlen',
+        howStep2Text: 'Adresse eingeben und im sicheren Checkout bezahlen.',
+        howStep3Title: '3. Erhalten',
+        howStep3Text: 'Wir versenden innerhalb von 1–2 Werktagen.',
+        faqTitle: 'Fragen',
+        faqSub: 'Häufig gestellt.',
+        navProducts: 'Produkte',
+        navHow: 'So bestellen Sie',
+        navFaq: 'FAQ',
+        navContact: 'Kontakt',
+        legalTitle: 'Dokumente',
+        lTerms: 'AGB',
+        lPrivacy: 'Datenschutz',
+        lWithdrawal: 'Widerrufsrecht',
+        lShipping: 'Versand und Zahlung',
+        legalRights: 'Alle Rechte vorbehalten.',
+        buyLoading: 'Bitte warten…',
+        buyError: 'Die Bestellung konnte nicht gestartet werden. Bitte erneut versuchen.',
+        buyNow: 'Jetzt kaufen',
+        msgMethodNotAllowed: 'Methode nicht erlaubt.',
+        msgUnknownProduct: 'Unbekanntes Produkt.',
+        msgNoVariant: 'Produkt ist nicht mit Shopify verknüpft.',
+        msgCheckoutFailed: 'Checkout konnte nicht gestartet werden. Bitte erneut versuchen.'
+    }
+};
+
 function buildVars(config) {
     const c = config.client;
     const b = config.brand || {};
     const addr = c.address || {};
     const locale = c.locale || 'bg-BG';
     const lang = locale.split('-')[0];
-    const bg = lang === 'bg';
     const slug = c.slug;
 
-    const T = bg
-        ? {
-              eyebrow: 'Онлайн магазин',
-              headline: `${b.tagline || c.displayName}`,
-              subheadline: `Поръчайте директно онлайн. Плащане с карта или наложен платеж. Доставка с ${(config.shipping?.carriers || ['куриер']).join(' или ')}.`,
-              ctaPrimary: 'Разгледай продуктите',
-              ctaSecondary: 'Как да поръчам',
-              productsTitle: 'Продукти',
-              productsSub: 'Изберете продукт и завършете поръчката в защитения Shopify checkout.',
-              howTitle: 'Как да поръчам',
-              howSub: 'Три стъпки, без регистрация.',
-              howStep1Title: '1. Избирате',
-              howStep1Text: 'Натискате „Купи сега“ на избрания продукт.',
-              howStep2Title: '2. Плащате',
-              howStep2Text: 'Попълвате адрес и плащате в защитения checkout.',
-              howStep3Title: '3. Получавате',
-              howStep3Text: 'Доставяме с куриер за 1–2 работни дни.',
-              faqTitle: 'Въпроси',
-              faqSub: 'Най-често задаваните.',
-              navProducts: 'Продукти',
-              navHow: 'Как да поръчам',
-              navFaq: 'Въпроси',
-              navContact: 'Контакти',
-              legalTitle: 'Документи',
-              lTerms: 'Общи условия',
-              lPrivacy: 'Политика за поверителност',
-              lWithdrawal: 'Право на отказ',
-              lShipping: 'Доставка и плащане',
-              legalRights: 'Всички права запазени.',
-              buyLoading: 'Моля изчакайте…',
-              buyError: 'Поръчката не можа да започне. Опитайте отново.',
-              buyNow: 'Купи сега',
-              msgMethodNotAllowed: 'Методът не е разрешен.',
-              msgUnknownProduct: 'Неизвестен продукт.',
-              msgNoVariant: 'Продуктът не е свързан с Shopify.',
-              msgCheckoutFailed: 'Checkout-ът не можа да започне. Опитайте отново.'
-          }
-        : {
-              eyebrow: 'Online shop',
-              headline: `${b.tagline || c.displayName}`,
-              subheadline: `Order online. Card or cash on delivery. Shipped with ${(config.shipping?.carriers || ['courier']).join(' or ')}.`,
-              ctaPrimary: 'See products',
-              ctaSecondary: 'How to order',
-              productsTitle: 'Products',
-              productsSub: 'Pick a product and finish in Shopify secure checkout.',
-              howTitle: 'How to order',
-              howSub: 'Three steps, no account needed.',
-              howStep1Title: '1. Choose',
-              howStep1Text: 'Click "Buy now" on the product you want.',
-              howStep2Title: '2. Pay',
-              howStep2Text: 'Enter your address and pay in the secure checkout.',
-              howStep3Title: '3. Receive',
-              howStep3Text: 'We ship within 1-2 business days.',
-              faqTitle: 'Questions',
-              faqSub: 'Frequently asked.',
-              navProducts: 'Products',
-              navHow: 'How to order',
-              navFaq: 'FAQ',
-              navContact: 'Contact',
-              legalTitle: 'Documents',
-              lTerms: 'Terms',
-              lPrivacy: 'Privacy policy',
-              lWithdrawal: 'Right of withdrawal',
-              lShipping: 'Shipping and payment',
-              legalRights: 'All rights reserved.',
-              buyLoading: 'Please wait…',
-              buyError: 'Could not start the order. Please try again.',
-              buyNow: 'Buy now',
-              msgMethodNotAllowed: 'Method not allowed.',
-              msgUnknownProduct: 'Unknown product.',
-              msgNoVariant: 'Product is not linked to Shopify.',
-              msgCheckoutFailed: 'Checkout could not start. Please try again.'
-          };
+    // Copy is keyed by language. It used to be a `bg ? ... : ...` ternary, so
+    // every non-Bulgarian store silently got English: a German client shipped a
+    // German product catalogue behind an English shop front.
+    const T = { ...(STRINGS[lang] || STRINGS.en) };
+    const carriers = (config.shipping?.carriers || [CARRIER_DEFAULT[lang] || CARRIER_DEFAULT.en])
+        .join(CARRIER_JOIN[lang] || CARRIER_JOIN.en);
+    T.headline = b.tagline || c.displayName;
+    T.subheadline = T.subheadline(carriers);
 
     const uspItems = (config.store?.usps || []).slice(0, 3)
         .map((u) => `<div><strong>${esc(u.split(':')[0])}</strong><span>${esc(u.split(':').slice(1).join(':').trim() || '')}</span></div>`)
@@ -129,23 +181,32 @@ function buildVars(config) {
         })
         .join('\n      ');
 
-    const faq = bg
-        ? [
-              ['Как да платя?', 'С карта през Shopify или с наложен платеж при доставка.'],
-              ['Колко е доставката?', config.shipping?.freeOver
-                  ? `Безплатна при поръчка над ${config.shipping.freeOver} ${c.currency}, иначе според тарифата на куриера.`
-                  : 'Според тарифата на куриера.'],
-              ['Мога ли да върна продукт?', `Да, в срок от ${config.legal?.returnDays || 14} дни.`],
-              ['Издавате ли фактура?', 'Да, фактура се издава с всяка поръчка.']
-          ]
-        : [
-              ['How do I pay?', 'By card through Shopify, or cash on delivery.'],
-              ['What is shipping?', config.shipping?.freeOver
-                  ? `Free over ${config.shipping.freeOver} ${c.currency}, otherwise per carrier rates.`
-                  : 'Per carrier rates.'],
-              ['Can I return it?', `Yes, within ${config.legal?.returnDays || 14} days.`],
-              ['Do you issue an invoice?', 'Yes, every order gets an invoice.']
-          ];
+    const faq = {
+        bg: [
+            ['Как да платя?', 'С карта през Shopify или с наложен платеж при доставка.'],
+            ['Колко е доставката?', config.shipping?.freeOver
+                ? `Безплатна при поръчка над ${config.shipping.freeOver} ${c.currency}, иначе според тарифата на куриера.`
+                : 'Според тарифата на куриера.'],
+            ['Мога ли да върна продукт?', `Да, в срок от ${config.legal?.returnDays || 14} дни.`],
+            ['Издавате ли фактура?', 'Да, фактура се издава с всяка поръчка.']
+        ],
+        en: [
+            ['How do I pay?', 'By card through Shopify, or cash on delivery.'],
+            ['What is shipping?', config.shipping?.freeOver
+                ? `Free over ${config.shipping.freeOver} ${c.currency}, otherwise per carrier rates.`
+                : 'Per carrier rates.'],
+            ['Can I return it?', `Yes, within ${config.legal?.returnDays || 14} days.`],
+            ['Do you issue an invoice?', 'Yes, every order gets an invoice.']
+        ],
+        de: [
+            ['Wie bezahle ich?', 'Per Karte über Shopify oder per Nachnahme.'],
+            ['Was kostet der Versand?', config.shipping?.freeOver
+                ? `Kostenlos ab ${config.shipping.freeOver} ${c.currency}, sonst nach Tarif des Paketdienstes.`
+                : 'Nach Tarif des Paketdienstes.'],
+            ['Kann ich zurücksenden?', `Ja, innerhalb von ${config.legal?.returnDays || 14} Tagen.`],
+            ['Erhalte ich eine Rechnung?', 'Ja, jede Bestellung erhält eine Rechnung.']
+        ]
+    }[lang] || [];
 
     const faqItems = faq
         .map(([q, a]) => `<details><summary>${esc(q)}</summary><p>${esc(a)}</p></details>`)
@@ -170,10 +231,16 @@ function buildVars(config) {
         secondaryColor: esc(b.secondaryColor || '#0f172a'),
         tagline: esc(b.tagline || ''),
         metaDescription: esc(b.metaDescription || b.tagline || c.displayName),
-        heroImg: config.store?.heroImage
+        // The whole block is emitted, not just the <img>. An empty .hero-media
+        // keeps its border and grey background, so a store with no photo showed
+        // an empty framed box next to the headline.
+        heroBlock: assetExists(config.store?.heroImage, slug)
+            ? `<div class="hero-media"><img src="${assetPath(config.store.heroImage, slug)}" alt="${esc(c.displayName)}"></div>`
+            : '',
+        heroImg: assetExists(config.store?.heroImage, slug)
             ? `<img src="${assetPath(config.store.heroImage, slug)}" alt="${esc(c.displayName)}">`
-            : `<img src="/assets/hero.jpg" alt="${esc(c.displayName)}">`,
-        logoImg: b.logo
+            : '',
+        logoImg: assetExists(b.logo, slug)
             ? `<img src="${assetPath(b.logo, slug)}" alt="${esc(c.displayName)}">`
             : '',
         uspItems,
@@ -192,8 +259,8 @@ function walk(dir, base = dir, out = []) {
     return out;
 }
 
-export function generateLanding(config) {
-    const outDir = resolve(root, 'dist', config.client.slug, 'landing');
+export function generateLanding(config, { distDir } = {}) {
+    const outDir = resolve(distDir || resolve(root, 'dist'), config.client.slug, 'landing');
     mkdirSync(outDir, { recursive: true });
     const vars = buildVars(config);
     const written = [];

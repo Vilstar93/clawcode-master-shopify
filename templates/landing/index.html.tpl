@@ -126,7 +126,7 @@
       </div>
       <div id="buy-status" role="status" aria-live="polite"></div>
     </div>
-    <div class="hero-media">{{heroImg}}</div>
+    {{heroBlock}}
   </div>
 </section>
 
