@@ -151,6 +151,37 @@ Registry; registri.bg republishes the official open data.
 (`Resource not accessible by integration`). It can push to repositories that
 already exist. New repos must be created by hand.
 
+## Landing copy is keyed by language
+
+`scripts/gen-landing.mjs` holds a `STRINGS` table keyed by the language part of
+`client.locale`. Adding a language means adding one entry; do not reintroduce a
+`bg ? ... : ...` ternary. The old ternary meant every locale but Bulgarian got
+English, so a German store shipped a German catalogue behind an English front.
+An unknown language falls back to `en` rather than rendering blanks.
+
+The carrier join word (`или` / `or` / `oder`) and the fallback carrier name live
+in `CARRIER_JOIN` and `CARRIER_DEFAULT` next to the table, because "A or B" is
+not the same word in every language and interpolating a translated fragment
+into a sentence reads wrong.
+
+Asset paths are checked with `assetExists` before they are emitted. Dawn and the
+landing template both used to render an `<img>` for a path that may not exist,
+which is a 404 and a broken-image icon. For the landing hero, the whole
+`.hero-media` block is conditional: an empty one keeps its border and grey
+background and reads as an empty framed box.
+
+`generateLanding(config, { distDir })` accepts an output directory so tests can
+write to a temp dir instead of `dist/`.
+
+## A note on the scam the user asked about
+
+A contact offering to "bring you N orders" for a percentage is the fake-order /
+stolen-card pattern, not a marketing service. The card is stolen or will be
+disputed, so the merchant loses the goods and pays a chargeback fee per order,
+and the percentage is collected up front. `shopify.p.com` does not exist:
+`p.com` returns NXDOMAIN, so there is no registrable domain, no site and no
+mail domain behind the address. Do not integrate anything from this contact.
+
 ## Related repositories
 
 - `Vilstar93/LandingShopi` — the public request portal. Separate repo, on
