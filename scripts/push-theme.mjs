@@ -7,6 +7,7 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadAndValidate } from './validate-config.mjs';
 import { loadEnv } from './lib/env.mjs';
+import { prepareTheme } from './lib/theme-prepare.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -69,12 +70,20 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     // Without this the push fails on a missing flag rather than on anything to
     // do with the store.
     const themeName = `${config.client?.displayName || config.client?.slug || 'Store'} (draft)`;
+
+    // Brand the copy that gets pushed. theme/ itself stays a clean Dawn subtree
+    // so `git subtree pull` keeps working, and the client's colours are applied
+    // to dist/<slug>/theme instead of being written to a file nobody read.
+    const outDir = resolve(root, 'dist', config.client.slug);
+    prepareTheme(config, { root, outDir });
+    const themeRel = `dist/${config.client.slug}/theme`;
     console.log(`→ pushing theme to ${store} (unpublished)`);
+    console.log(`  branded with ${config.brand?.primaryColor || 'Dawn defaults'}`);
     // Run from the repo root and pass the theme as a relative path. Under a
     // shell, Node joins arguments with spaces and does not quote them, so an
     // absolute path like C:\Users\First Last\... would split into two
     // arguments. A relative path cannot contain a space.
-    const args = ['theme', 'push', '--store', store, '--unpublished', '--theme', themeName, '--path', 'theme'];
+    const args = ['theme', 'push', '--store', store, '--unpublished', '--theme', themeName, '--path', themeRel];
 
     // spawnSync has no timeout by default, so a CLI that stalls on a network
     // call blocks the agent indefinitely. Fail loudly instead.

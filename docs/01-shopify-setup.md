@@ -63,9 +63,15 @@ and there is no token to copy: the code asks for one and caches it for 24 hours.
 
 1. Open the [Dev Dashboard](https://dev.shopify.com/dashboard/) → **Apps** →
    **Create app**.
-2. Add a version with the scope `write_products`. That is the only one the
-   factory uses: the import calls `productSet` and nothing else. A write scope
-   already grants read, and extra scopes only widen what a leaked token can do.
+2. Add a version with the scope `write_products`. That covers the import, which
+   calls `productSet` and nothing else. A write scope already grants read, and
+   extra scopes only widen what a leaked token can do.
+
+   The theme push does **not** use this token. It uses `SHOPIFY_CLI_THEME_TOKEN`,
+   which `npx shopify theme token` issues and which carries the theme scopes the
+   CLI needs. Adding `write_themes` here would not help the push and would widen
+   the Admin token for no reason.
+
    If the app form asks for a redirect URL, any URL works — the client
    credentials grant never redirects.
 3. Install the app on the dev store.

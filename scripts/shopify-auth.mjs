@@ -15,10 +15,9 @@ import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createInterface } from 'node:readline/promises';
-import { loadEnv } from './lib/env.mjs';
+import { loadEnv, envPath } from './lib/env.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const ENV_PATH = resolve(ROOT, '.env');
 
 export const SCOPES = 'write_products';
 
@@ -85,7 +84,10 @@ export function extractCode(input) {
 }
 
 function upsertEnv(key, value) {
-    const lines = existsSync(ENV_PATH) ? readFileSync(ENV_PATH, 'utf8').split('\n') : [];
+    // Resolved per call: SHOPIFY_ENV_FILE may be set by the caller, and a test
+    // must be able to write a throwaway file instead of the operator's .env.
+    const target = envPath();
+    const lines = existsSync(target) ? readFileSync(target, 'utf8').split('\n') : [];
     const out = [];
     let seen = false;
     for (const line of lines) {
@@ -97,7 +99,7 @@ function upsertEnv(key, value) {
         }
     }
     if (!seen) out.push(`${key}=${value}`);
-    writeFileSync(ENV_PATH, `${out.join('\n').replace(/\n+$/, '')}\n`, 'utf8');
+    writeFileSync(target, `${out.join('\n').replace(/\n+$/, '')}\n`, 'utf8');
 }
 
 async function main() {

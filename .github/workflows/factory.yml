@@ -74,20 +74,25 @@ jobs:
       - name: Credential scripts do not print stack traces
         run: |
           # A rejected token must read as an instruction, not a crash.
-          # The config names the store, so the .env domain has to agree with it
-          # or the domain guard answers first and the token path is never
-          # reached. test.myshopify.com is a real store that answers 401.
+          # The config names the store, so the domain in the env file has to
+          # agree with it or the domain guard answers first and the token path
+          # is never reached. test.myshopify.com is a real store that answers 401.
+          #
+          # This writes a throwaway env file via SHOPIFY_ENV_FILE rather than
+          # .env. It used to overwrite .env and delete it afterwards, which is
+          # fine on a runner that has no .env, but running the same workflow
+          # locally destroyed the operator's only copy of a real token.
           node -e "
             const fs = require('fs');
             const c = JSON.parse(fs.readFileSync('config/client.example.json', 'utf8'));
             c.store.domain = 'test.myshopify.com';
             fs.writeFileSync('/tmp/stacktrace-config.json', JSON.stringify(c, null, 2) + '\n');
           "
-          printf 'SHOPIFY_STORE_DOMAIN=test.myshopify.com\nSHOPIFY_ADMIN_TOKEN=fake\n' > .env
+          printf 'SHOPIFY_STORE_DOMAIN=test.myshopify.com\nSHOPIFY_ADMIN_TOKEN=fake\n' > /tmp/stacktrace.env
           set +e
-          out=$(node scripts/import-products.mjs /tmp/stacktrace-config.json 2>&1)
+          out=$(SHOPIFY_ENV_FILE=/tmp/stacktrace.env node scripts/import-products.mjs /tmp/stacktrace-config.json 2>&1)
           set -e
-          rm -f .env /tmp/stacktrace-config.json
+          rm -f /tmp/stacktrace.env /tmp/stacktrace-config.json
           if echo "$out" | grep -q "at async file:"; then
             echo "import-products printed a stack trace:"; echo "$out"; exit 1
           fi

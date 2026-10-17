@@ -12,7 +12,15 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
-export function loadEnv(path = resolve(ROOT, '.env')) {
+// Which file to read. One .env per client is the goal, and a test or CI step
+// must not have to write over the operator's real .env to get one: a step that
+// wrote .env and deleted it afterwards destroyed the only copy of a token when
+// the same workflow ran locally.
+export function envPath() {
+    return process.env.SHOPIFY_ENV_FILE || resolve(ROOT, '.env');
+}
+
+export function loadEnv(path = envPath()) {
     let text;
     try {
         text = readFileSync(path, 'utf8');

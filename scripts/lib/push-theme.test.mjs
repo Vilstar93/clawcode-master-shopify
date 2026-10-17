@@ -22,11 +22,20 @@ test('the Shopify CLI is spawned through a shell on Windows', () => {
 
 test('the theme path passed to the CLI cannot contain a space', () => {
     // Under a shell Node does not quote arguments, so an absolute path with a
-    // space (C:\Users\First Last\...) would split into two arguments.
-    const match = source.match(/--path',\s*'([^']+)'/);
-    assert.ok(match, 'the --path argument should be a literal');
-    assert.equal(match[1], 'theme', 'the theme path must be relative');
+    // space (C:\Users\First Last\...) would split into two arguments. The path
+    // is dist/<slug>/theme, which is still relative, and the schema pins the
+    // slug to [a-z0-9-] so the path cannot acquire a space.
+    const pathArg = source.match(/'--path',\s*([A-Za-z_$][\w$]*)/);
+    assert.ok(pathArg, 'the --path argument should be passed');
+    const rel = source.match(new RegExp(`const\\s+${pathArg[1]}\\s*=\\s*(.+?);`));
+    assert.ok(rel, `${pathArg[1]} should be assigned a relative path`);
+    assert.match(rel[1], /^`dist\/\$\{config\.client\.slug\}\/theme`$/,
+        'the theme path must be relative to the repo root');
     assert.doesNotMatch(source, /--path',\s*themeDir/, 'themeDir is an absolute path and may contain a space');
+
+    const schema = JSON.parse(readFileSync(resolve(root, 'config/client.schema.json'), 'utf8'));
+    const pattern = schema.properties.client.properties.slug.pattern;
+    assert.doesNotMatch(pattern, /\\s| /, 'a slug with a space would break the --path argument');
 });
 
 test('the CLI runs from the repository root', () => {
