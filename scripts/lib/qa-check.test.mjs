@@ -116,6 +116,29 @@ test('the variant check does not apply to non-landing stores', () => {
     assert.equal(find(qa(config, NO_DIST), 'landing products are linked to Shopify variants'), undefined);
 });
 
+test('the pre-import check does not demand variant ids it is about to create', () => {
+    // deploy runs QA twice: before the import and after it. The ids are the
+    // import's output, so requiring them up front blocks every new landing
+    // store on a value that only exists once the blocked step has run.
+    const config = completed(clone());
+    config.store.type = 'landing';
+    config.products = [config.products[0]];
+    delete config.products[0].variantId;
+    const checks = qa(config, NO_DIST, { requireVariants: false });
+    assert.equal(find(checks, 'landing products are linked to Shopify variants'), undefined);
+});
+
+test('the post-import check still demands the variant ids', () => {
+    // The same store, checked after the import, must fail: a landing store with
+    // unlinked products sells nothing, and that is the whole point of the check.
+    const config = completed(clone());
+    config.store.type = 'landing';
+    config.products = [config.products[0]];
+    delete config.products[0].variantId;
+    assert.equal(find(qa(config, NO_DIST, { requireVariants: true }),
+        'landing products are linked to Shopify variants').ok, false);
+});
+
 test('the example config documents the gaps rather than hiding them', () => {
     // The shipped example is a template, not a finished store: it is a landing
     // store with one product unlinked and no GA4. QA must say so. If someone

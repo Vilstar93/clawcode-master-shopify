@@ -7,7 +7,7 @@ import { loadAndValidate } from './validate-config.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
-export function qa(config, distDir) {
+export function qa(config, distDir, { requireVariants = true } = {}) {
     const checks = [];
     const add = (name, ok, detail = '') => checks.push({ name, ok, detail });
 
@@ -48,7 +48,13 @@ export function qa(config, distDir) {
     // ids, the bundle ships with an empty product list, and every "Купи сега"
     // button returns "Продуктът не е свързан с Shopify." The store looks fine
     // and sells nothing, so this is a blocker, not a warning.
-    if (config.store?.type === 'landing') {
+    //
+    // requireVariants is false for the check that runs BEFORE the import. The
+    // ids only exist once Shopify has created the products, so demanding them
+    // there would block every new landing store on something the import is
+    // about to supply. It stays true for the check after the import, which is
+    // where a missing id means the import did not do its job.
+    if (config.store?.type === 'landing' && requireVariants) {
         const linked = config.products.filter((p) => p.variantId);
         add('landing products are linked to Shopify variants',
             linked.length === config.products.length,
@@ -74,9 +80,11 @@ export function qa(config, distDir) {
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
-    const arg = process.argv[2];
+    const args = process.argv.slice(2);
+    const requireVariants = !args.includes('--no-require-variants');
+    const arg = args.find((a) => !a.startsWith('--'));
     if (!arg) {
-        console.error('Usage: node scripts/qa-check.mjs <config.json>');
+        console.error('Usage: node scripts/qa-check.mjs <config.json> [--no-require-variants]');
         process.exit(2);
     }
     const configPath = resolve(process.cwd(), arg);
@@ -86,7 +94,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
         process.exit(1);
     }
     const distDir = resolve(root, 'dist', config.client.slug);
-    const checks = qa(config, distDir);
+    const checks = qa(config, distDir, { requireVariants });
     const failed = checks.filter((c) => !c.ok);
 
     for (const c of checks) {

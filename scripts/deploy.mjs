@@ -114,7 +114,10 @@ async function main() {
     console.log('\n-- QA before import --');
     let blocked = false;
     try {
-        run('qa-check.mjs', [configPath]);
+        // Variant ids are what the import produces, so the pre-import check
+        // cannot demand them. Without this flag a brand new landing store is
+        // blocked on a value that only exists after the step being blocked.
+        run('qa-check.mjs', [configPath, '--no-require-variants']);
     } catch {
         blocked = true;
     }

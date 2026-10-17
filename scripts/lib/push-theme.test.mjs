@@ -33,3 +33,19 @@ test('the CLI runs from the repository root', () => {
     // The relative --path only resolves if the working directory is the root.
     assert.match(source, /cwd:\s*root/, 'the CLI must run from the repo root');
 });
+
+test('the push names the theme, which a non-interactive shell requires', () => {
+    // Shopify CLI 4.9.4 refuses --unpublished without --theme when stdin is not
+    // a terminal, and an agent never has one. Verified against the real CLI:
+    // without the flag the push fails on "Flag not specified: --theme" before
+    // it ever reaches the store.
+    assert.match(source, /'--unpublished',\s*'--theme'/, 'the push must pass --theme');
+    const match = source.match(/'--theme',\s*([A-Za-z_$][\w$]*)/);
+    assert.ok(match, '--theme should be passed a variable, not a bare flag');
+});
+
+test('the theme name falls back when the config has no display name', () => {
+    // A derived name must never be undefined or the CLI receives "undefined".
+    assert.match(source, /displayName\s*\|\|\s*[\w?.]*slug\s*\|\|\s*'Store'/,
+        'the theme name needs a fallback chain');
+});

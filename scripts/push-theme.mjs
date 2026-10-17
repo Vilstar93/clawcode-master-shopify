@@ -64,12 +64,17 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     }
 
     const store = config.store.domain;
+    // Shopify CLI 4.9.4 refuses --unpublished in a non-interactive shell unless
+    // --theme names the new theme, and an agent always runs non-interactively.
+    // Without this the push fails on a missing flag rather than on anything to
+    // do with the store.
+    const themeName = `${config.client?.displayName || config.client?.slug || 'Store'} (draft)`;
     console.log(`→ pushing theme to ${store} (unpublished)`);
     // Run from the repo root and pass the theme as a relative path. Under a
     // shell, Node joins arguments with spaces and does not quote them, so an
     // absolute path like C:\Users\First Last\... would split into two
     // arguments. A relative path cannot contain a space.
-    const args = ['theme', 'push', '--store', store, '--unpublished', '--path', 'theme'];
+    const args = ['theme', 'push', '--store', store, '--unpublished', '--theme', themeName, '--path', 'theme'];
 
     // spawnSync has no timeout by default, so a CLI that stalls on a network
     // call blocks the agent indefinitely. Fail loudly instead.
