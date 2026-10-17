@@ -1,6 +1,7 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:https';
+import { getCACertificates, setDefaultCACertificates } from 'node:tls';
 import { importProducts, variantIdOf } from '../import-products.mjs';
 
 // A real HTTPS server stands in for Shopify. It exercises the fetch call, the
@@ -57,15 +58,16 @@ fnAQDNHVaRvWaQwGaFXVVTjKfOM0aq4/otZVEi78
 -----END CERTIFICATE-----
 `;
 
-// The certificate is self-signed, so verification is off for this process. It
-// is restored afterwards so the setting cannot leak into another test file.
-const originalTls = process.env.NODE_TLS_REJECT_UNAUTHORIZED;
+// The certificate is self-signed, so it is added to the trust store for the
+// duration of this file. The default list is restored afterwards, which keeps
+// the trust change from leaking into another test file.
+const originalCAs = getCACertificates('default');
 let server;
 let requests = [];
 let respond = () => ({ status: 200, json: {} });
 
 before(async () => {
-    process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+    setDefaultCACertificates([...originalCAs, CERT]);
     server = createServer({ key: KEY, cert: CERT }, (req, res) => {
         let body = '';
         req.on('data', (c) => { body += c; });
@@ -81,8 +83,7 @@ before(async () => {
 
 after(() => {
     server?.close();
-    if (originalTls === undefined) delete process.env.NODE_TLS_REJECT_UNAUTHORIZED;
-    else process.env.NODE_TLS_REJECT_UNAUTHORIZED = originalTls;
+    setDefaultCACertificates(originalCAs);
 });
 
 const domain = () => `127.0.0.1:${server.address().port}`;
