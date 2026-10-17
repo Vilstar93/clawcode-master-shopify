@@ -169,6 +169,17 @@ Full detail in `playbooks/00-full-store-build.md`.
 Payment credentials, tax settings, and legal review. These need account access
 and human judgment. The agent prepares everything up to that line.
 
+Two traps worth knowing about, because both look finished while being broken:
+
+- A product with a `TODO` title or a `0.00` price. `qa-check` refuses these.
+- A `landing` store whose products have no `variantId`. The buy button posts to
+  `/api/buy`, which resolves a slug to a Shopify variant id; until products are
+  imported the bundle ships an empty product list and every button answers
+  "Продуктът не е свързан с Shopify." `qa-check` refuses this too.
+
+The order is: build, import products, copy the variant ids back into the config,
+rebuild, then push the theme.
+
 ## Requirements
 
 - Node.js 20+

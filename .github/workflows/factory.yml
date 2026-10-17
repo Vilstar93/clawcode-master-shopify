@@ -160,6 +160,31 @@ jobs:
           node scripts/qa-check.mjs config/primeren-klient.json
           echo "a completed config passes QA"
 
+      - name: QA refuses a landing store with no linked variants
+        run: |
+          # A landing store sells through /api/buy, which needs a variant id per
+          # product. Without them the bundle ships an empty product list and
+          # every buy button fails, while QA used to report the store as nearly
+          # ready. This is the trap that matters most for a landing store.
+          node -e "
+            const fs = require('fs');
+            const c = JSON.parse(fs.readFileSync('config/primeren-klient.json', 'utf8'));
+            c.store.type = 'landing';
+            c.integrations.ga4 = 'G-TEST00000';
+            c.brand.tagline = 'Ръчно изработени продукти';
+            Object.assign(c.products[0], {
+              title: 'Примерен продукт', price: 24.9,
+              shortDescription: 'Кратко описание.', description: 'Пълно описание.',
+              images: ['clients/primeren-klient/products/1-1.jpg'],
+            });
+            fs.writeFileSync('config/primeren-klient.json', JSON.stringify(c, null, 2) + '\n');
+          "
+          if node scripts/qa-check.mjs config/primeren-klient.json; then
+            echo "QA passed a landing store that cannot sell"; exit 1
+          fi
+          node scripts/qa-check.mjs config/primeren-klient.json | grep -q "linked to Shopify variants"
+          echo "QA blocked the unlinked landing store"
+
       - name: No test artifacts are left behind
         run: |
           # The pipeline above writes a client config and a dist tree. Neither

@@ -43,6 +43,18 @@ export function qa(config, distDir) {
     const todoTagline = isPlaceholder(config.brand?.tagline);
     add('brand tagline is real', !todoTagline, todoTagline ? 'still a placeholder' : '');
 
+    // A landing store sells through /api/buy, which resolves a product slug to
+    // a Shopify variant id. Until products are imported there are no variant
+    // ids, the bundle ships with an empty product list, and every "Купи сега"
+    // button returns "Продуктът не е свързан с Shopify." The store looks fine
+    // and sells nothing, so this is a blocker, not a warning.
+    if (config.store?.type === 'landing') {
+        const linked = config.products.filter((p) => p.variantId);
+        add('landing products are linked to Shopify variants',
+            linked.length === config.products.length,
+            `${linked.length}/${config.products.length} linked`);
+    }
+
     add('contact email set', Boolean(config.client.email));
     add('legal entity set', Boolean(config.client.legalName && config.client.eik));
     add('address set', Boolean(config.client.address?.street && config.client.address?.city));
