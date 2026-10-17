@@ -185,6 +185,42 @@ jobs:
           node scripts/qa-check.mjs config/primeren-klient.json | grep -q "linked to Shopify variants"
           echo "QA blocked the unlinked landing store"
 
+      - name: Deploy refuses a config whose store is not the one in .env
+        run: |
+          # One .env serves every client, but each config names its own store.
+          # Without this check the import of one client could write into the
+          # store of another, which cannot be undone from the config side.
+          node -e "
+            const fs = require('fs');
+            const c = JSON.parse(fs.readFileSync('config/primeren-klient.json', 'utf8'));
+            c.store.domain = 'primeren-klient.myshopify.com';
+            fs.writeFileSync('config/primeren-klient.json', JSON.stringify(c, null, 2) + '\n');
+          "
+          if SHOPIFY_STORE_DOMAIN=other-client.myshopify.com SHOPIFY_ADMIN_TOKEN=shpat_x \
+             node scripts/deploy.mjs config/primeren-klient.json; then
+            echo "deploy wrote to a store the config does not name"; exit 1
+          fi
+          echo "deploy refused the mismatched store"
+
+      - name: Deploy refuses to import while QA has blockers
+        run: |
+          # An import is a write to a real store. A product with a TODO title
+          # and a 0.00 price becomes junk the operator deletes by hand, so QA
+          # has to gate the import rather than follow it.
+          node -e "
+            const fs = require('fs');
+            const c = JSON.parse(fs.readFileSync('config/primeren-klient.json', 'utf8'));
+            c.products[0].price = 0;
+            c.products[0].title = 'TODO продукт';
+            fs.writeFileSync('config/primeren-klient.json', JSON.stringify(c, null, 2) + '\n');
+          "
+          if SHOPIFY_STORE_DOMAIN=primeren-klient.myshopify.com SHOPIFY_ADMIN_TOKEN=shpat_x \
+             node scripts/deploy.mjs config/primeren-klient.json; then
+            echo "deploy imported a store QA rejects"; exit 1
+          fi
+          node scripts/deploy.mjs config/primeren-klient.json 2>&1 | grep -q "nothing was sent to Shopify"
+          echo "deploy refused the blocked import"
+
       - name: No test artifacts are left behind
         run: |
           # The pipeline above writes a client config and a dist tree. Neither

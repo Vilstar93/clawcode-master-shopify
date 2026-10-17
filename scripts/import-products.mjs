@@ -6,6 +6,7 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadAndValidate } from './validate-config.mjs';
 import { loadEnv } from './lib/env.mjs';
+import { sameDomain } from './lib/domain.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 // Read lazily: loadEnv() runs in the CLI entry point, after this module body
@@ -15,7 +16,12 @@ const apiVersion = () => process.env.SHOPIFY_API_VERSION || '2026-01';
 const PRODUCT_SET = `
 mutation ProductSet($input: ProductSetInput!, $identifier: ProductSetIdentifiers) {
   productSet(input: $input, identifier: $identifier, synchronous: true) {
-    product { id handle title }
+    product {
+      id
+      handle
+      title
+      variants(first: 1) { nodes { id } }
+    }
     userErrors { field message }
   }
 }`;
@@ -82,9 +88,27 @@ export async function importProducts(config, { domain, token }) {
             identifier: { handle: p.handle }
         });
         const errs = data.productSet.userErrors || [];
-        results.push({ handle: p.handle, ok: errs.length === 0, errors: errs });
+        const product = data.productSet.product;
+        results.push({
+            handle: p.handle,
+            ok: errs.length === 0,
+            errors: errs,
+            // The landing checkout needs the numeric variant id, not the GID.
+            // Storing the GID would make /api/buy send Shopify an id it cannot
+            // resolve, so the last path segment is what goes back into config.
+            variantId: variantIdOf(product),
+        });
     }
     return results;
+}
+
+// Shopify returns "gid://shopify/ProductVariant/123456789". The landing bundle
+// compares against a plain number, so keep only the trailing digits.
+export function variantIdOf(product) {
+    const gid = product?.variants?.nodes?.[0]?.id;
+    if (!gid) return undefined;
+    const match = String(gid).match(/(\d+)$/);
+    return match ? match[1] : undefined;
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
@@ -94,16 +118,24 @@ if (import.meta.url === `file://${process.argv[1]}`) {
         process.exit(2);
     }
     loadEnv();
-    const domain = process.env.SHOPIFY_STORE_DOMAIN;
     const token = process.env.SHOPIFY_ADMIN_TOKEN;
-    if (!domain || !token) {
-        console.error('✗ Set SHOPIFY_STORE_DOMAIN and SHOPIFY_ADMIN_TOKEN in .env');
+    if (!token) {
+        console.error('✗ Set SHOPIFY_ADMIN_TOKEN in .env');
         process.exit(1);
     }
     const configPath = resolve(process.cwd(), arg);
     const { config, errors } = loadAndValidate(configPath);
     if (errors.length) {
         console.error('✗ config invalid; run validate first');
+        process.exit(1);
+    }
+    // The config names the store. Reading the domain from .env here let one
+    // client's products land in another client's store when a single .env
+    // serves several clients.
+    const domain = config.store.domain;
+    const envDomain = process.env.SHOPIFY_STORE_DOMAIN;
+    if (envDomain && !sameDomain(envDomain, domain)) {
+        console.error(`✗ SHOPIFY_STORE_DOMAIN is ${envDomain} but this config targets ${domain}.`);
         process.exit(1);
     }
     // importProducts() talks to the network and can throw before returning any
@@ -118,8 +150,18 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     }
     const ok = results.filter((r) => r.ok).length;
     console.log(`✓ imported ${ok}/${results.length} product(s)`);
+    for (const r of results.filter((r) => r.ok)) {
+        if (r.variantId) console.log(`  ${r.handle} -> variant ${r.variantId}`);
+    }
     for (const r of results.filter((r) => !r.ok)) {
         console.error(`  ✗ ${r.handle}: ${r.errors.map((e) => e.message).join('; ')}`);
+    }
+    // A successful import that returns no variant id leaves a landing store
+    // unable to sell, so print what to do instead of failing silently.
+    const unlinked = results.filter((r) => r.ok && !r.variantId);
+    if (unlinked.length) {
+        console.error(`  ⚠ no variant id for: ${unlinked.map((r) => r.handle).join(', ')}`);
+        console.error('    Landing stores cannot sell without one; check the product in Shopify.');
     }
     process.exit(ok === results.length ? 0 : 1);
 }

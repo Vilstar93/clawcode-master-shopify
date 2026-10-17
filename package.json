@@ -16,7 +16,8 @@
     "import": "node scripts/import-products.mjs",
     "qa": "node scripts/qa-check.mjs",
     "new-client": "node scripts/new-client.mjs",
-    "test": "node --test scripts/lib/*.test.mjs"
+    "test": "node --test scripts/lib/*.test.mjs",
+    "deploy": "node scripts/deploy.mjs"
   },
   "engines": {
     "node": ">=20"

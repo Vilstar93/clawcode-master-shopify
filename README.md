@@ -43,13 +43,27 @@ portal request        ->  scripts/new-client.mjs  ->  config/<client>.json
                                                              |
                                                              v
                         dist/<client>/  <-  scripts/build-store.mjs
-                        (push to Shopify by hand)
+                                                             |
+                              you create the store in Shopify  |
+                                                             v
+                        scripts/deploy.mjs  ->  live draft store
+                        (import, variant ids, QA, theme)
 ```
 
 A portal request carries nine fields. A config needs about sixty, so
 `new-client.mjs` derives the rest: slug, Bulgarian defaults, address split, and
 placeholder products. Everything it invents is marked `TODO`, and `qa-check`
 refuses to pass a store that still contains one.
+
+`deploy.mjs` is the second half. Once the store exists, one command imports the
+products, writes the variant ids Shopify returns back into the config, rebuilds
+the landing bundle so it can sell, and pushes the theme unpublished. It refuses
+to import while QA reports blockers, because a `TODO` product with a `0.00` price
+becomes junk in a real store. See `docs/01-shopify-setup.md`.
+
+**Creating the store itself is manual.** Shopify has no public API for it: a
+store needs a signed-up owner and a paid plan. `deploy.mjs` takes over from
+there.
 
 **New here? Start with [`AGENT-BUILD.md`](AGENT-BUILD.md)** — how to stand up the
 agent, and how to get the most out of a ChatGPT Plus plan.
