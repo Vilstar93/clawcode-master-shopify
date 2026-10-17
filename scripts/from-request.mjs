@@ -198,8 +198,8 @@ function main() {
 
     const outPath = resolve(process.cwd(), process.argv[3] ?? `config/${config.client.slug}.json`);
 
-    if (existsSync(outPath) && !process.env.FORCE) {
-        console.error(`✗ ${outPath} already exists. Set FORCE=1 to overwrite.`);
+    if (existsSync(outPath) && !process.argv.includes('--force')) {
+        console.error(`✗ ${outPath} already exists. Pass --force to overwrite.`);
         process.exit(1);
     }
 
