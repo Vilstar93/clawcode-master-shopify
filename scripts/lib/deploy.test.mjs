@@ -45,8 +45,13 @@ test('a result for an unknown handle is ignored', () => {
 
 test('deploy refuses to run without credentials', () => {
     // The usage text is the only documentation an operator reads mid-trial.
+    // Both credential shapes must be named: a Dev Dashboard app has no token to
+    // paste, and an operator who is told to set SHOPIFY_ADMIN_TOKEN alone will
+    // look for a token that Shopify stopped showing in January 2026.
     const source = readFileSync(resolve(root, 'scripts/deploy.mjs'), 'utf8');
-    assert.match(source, /SHOPIFY_ADMIN_TOKEN in .env/);
+    assert.match(source, /SHOPIFY_ADMIN_TOKEN/);
+    assert.match(source, /SHOPIFY_CLIENT_ID/);
+    assert.match(source, /SHOPIFY_CLIENT_SECRET/);
     assert.match(source, /unpublished/, 'the operator must be told nothing is published');
 });
 

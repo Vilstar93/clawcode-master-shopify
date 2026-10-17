@@ -19,6 +19,7 @@ import { loadAndValidate } from './validate-config.mjs';
 import { loadEnv } from './lib/env.mjs';
 import { importProducts } from './import-products.mjs';
 import { normalizeDomain, sameDomain } from './lib/domain.mjs';
+import { getAccessToken, storedToken, hasClientCredentials } from './lib/shopify-token.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -70,9 +71,13 @@ async function main() {
     }
 
     loadEnv();
-    const token = process.env.SHOPIFY_ADMIN_TOKEN;
-    if (!token) {
-        console.error('✗ Set SHOPIFY_ADMIN_TOKEN in .env');
+    // Either credential shape is accepted. A stored token is the only one that
+    // works for a client's store; client credentials cover a store in the same
+    // organization as the Dev Dashboard app.
+    if (!storedToken() && !hasClientCredentials()) {
+        console.error('✗ No Shopify credentials. Set one of these in .env:');
+        console.error('  SHOPIFY_ADMIN_TOKEN                        (authorization code grant)');
+        console.error('  SHOPIFY_CLIENT_ID + SHOPIFY_CLIENT_SECRET  (Dev Dashboard app)');
         process.exit(1);
     }
 
@@ -131,6 +136,16 @@ async function main() {
     }
 
     console.log('\n-- import products --');
+    // Resolve the token here rather than at startup: the client credentials
+    // request has to address this client's shop, which is only known after the
+    // config is read.
+    let token;
+    try {
+        token = await getAccessToken({ domain });
+    } catch (error) {
+        console.error(`✗ ${error.message}`);
+        process.exit(1);
+    }
     let results;
     try {
         results = await importProducts(config, { domain, token });

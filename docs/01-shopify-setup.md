@@ -9,7 +9,7 @@ yours. Everything after that is one command.
 ```bash
 # 1. You: create the store and note the domain.            (Shopify admin)
 # 2. You: put the domain in config/<client>.json store.domain
-# 3. You: put the admin token in .env
+# 3. You: put the credentials in .env   (see "Credentials" below)
 
 node scripts/deploy.mjs config/<client>.json
 ```
@@ -47,16 +47,55 @@ products, and checkout all work. It cannot take live payments until the client
 picks a plan. For a store the client will sell from, they sign up and pay; you
 cannot do that part for them, and no API will.
 
-## Admin API token (for product import)
+## Credentials (for product import)
 
-1. Shopify admin → Settings → Apps and sales channels → Develop apps.
-2. Create an app, name it `store-factory`.
-3. Configure Admin API scopes: `write_products`, `read_products`,
+Shopify stopped showing a copyable admin token on 1 January 2026. The legacy
+"Develop apps" flow in the store admin no longer creates new apps. Where your
+credentials come from now depends on whose store you are deploying to, and the
+two cases are not interchangeable.
+
+### Your own store: Client ID + secret
+
+Use this for your own store and for any dev store created from the same Dev
+Dashboard. No token to copy; the code requests one and caches it for 24 hours.
+
+1. Open the [Dev Dashboard](https://dev.shopify.com/dashboard/) → **Apps** →
+   **Create app**.
+2. Add a version with the scopes `write_products`, `read_products`,
    `write_content`, `read_content`.
-4. Install the app and copy the Admin API access token.
-5. Put it in `.env` as `SHOPIFY_ADMIN_TOKEN`.
+3. Install the app on your store.
+4. **Settings** → copy the **Client ID** and **Client secret**.
+5. Put them in `.env`:
 
-Never commit this token. `.env` is gitignored.
+```bash
+SHOPIFY_CLIENT_ID=...
+SHOPIFY_CLIENT_SECRET=...
+```
+
+### A client's store: a stored token
+
+The client credentials grant only reaches stores in **the same Shopify
+organization as the app**. A client's store is not, and the request fails with
+`shop_not_permitted`. For those, use the authorization code grant and store the
+resulting token.
+
+1. In the Dev Dashboard, set the app's distribution to **custom distribution**
+   and install it on the client's store.
+2. Run the authorization code grant once to get a non-expiring token. The
+   official walkthrough is
+   [Authenticate a standalone app](https://shopify.dev/docs/apps/build/authentication-authorization/authenticate-standalone-apps).
+3. Put it in `.env` as `SHOPIFY_ADMIN_TOKEN`.
+
+The store's own admin can also create an app for a single store and give you a
+token, if the merchant is willing to do that step.
+
+Never commit these. `.env` is gitignored.
+
+### Which one applies
+
+`SHOPIFY_ADMIN_TOKEN` wins when both are set, because it is the only one that
+can work for a client store. If you see `shop_not_permitted`, the store is not
+in your organization and you need the second path.
 
 ## Shopify CLI (for theme push)
 

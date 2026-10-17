@@ -3,6 +3,8 @@ dist/
 .env
 .env.*
 !.env.example
+# Holds a 24-hour access token. Never commit it.
+.shopify-token-cache.json
 *.log
 .DS_Store
 clients/*/raw/

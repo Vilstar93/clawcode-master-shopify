@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { loadAndValidate } from './validate-config.mjs';
 import { loadEnv } from './lib/env.mjs';
 import { sameDomain } from './lib/domain.mjs';
+import { getAccessToken, storedToken, hasClientCredentials } from './lib/shopify-token.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 // Read lazily: loadEnv() runs in the CLI entry point, after this module body
@@ -118,9 +119,14 @@ if (import.meta.url === `file://${process.argv[1]}`) {
         process.exit(2);
     }
     loadEnv();
-    const token = process.env.SHOPIFY_ADMIN_TOKEN;
-    if (!token) {
-        console.error('✗ Set SHOPIFY_ADMIN_TOKEN in .env');
+    // A stored token is the only credential that works for a client's store,
+    // since client credentials cannot reach a store outside the app's own
+    // organization. Accept either, and resolve the token after the domain is
+    // known so the client credentials request can address the right shop.
+    if (!storedToken() && !hasClientCredentials()) {
+        console.error('✗ No Shopify credentials. Set one of these in .env:');
+        console.error('  SHOPIFY_ADMIN_TOKEN                    (authorization code grant)');
+        console.error('  SHOPIFY_CLIENT_ID + SHOPIFY_CLIENT_SECRET  (Dev Dashboard app)');
         process.exit(1);
     }
     const configPath = resolve(process.cwd(), arg);
@@ -136,6 +142,13 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     const envDomain = process.env.SHOPIFY_STORE_DOMAIN;
     if (envDomain && !sameDomain(envDomain, domain)) {
         console.error(`✗ SHOPIFY_STORE_DOMAIN is ${envDomain} but this config targets ${domain}.`);
+        process.exit(1);
+    }
+    let token;
+    try {
+        token = await getAccessToken({ domain });
+    } catch (error) {
+        console.error(`✗ ${error.message}`);
         process.exit(1);
     }
     // importProducts() talks to the network and can throw before returning any
