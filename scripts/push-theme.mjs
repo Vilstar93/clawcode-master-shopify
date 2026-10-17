@@ -11,7 +11,15 @@ import { loadEnv } from './lib/env.mjs';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
 function run(cmd, args, opts = {}) {
-    const r = spawnSync(cmd, args, { stdio: 'inherit', shell: false, ...opts });
+    // On Windows the Shopify CLI is a `shopify.cmd` shim, and Node refuses to
+    // spawn a .cmd without a shell (it has since the fix for CVE-2024-27980).
+    // Without the shell an installed CLI reports as "not installed or not on
+    // PATH", which is exactly the wrong message to hit during a client trial.
+    const r = spawnSync(cmd, args, {
+        stdio: 'inherit',
+        shell: process.platform === 'win32',
+        ...opts,
+    });
     // The CLI is not installed at all: say so rather than reporting exit 1.
     if (r.error && r.error.code === 'ENOENT') {
         console.error(`✗ ${cmd} is not installed or not on PATH.`);
@@ -57,11 +65,16 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 
     const store = config.store.domain;
     console.log(`→ pushing theme to ${store} (unpublished)`);
-    const args = ['theme', 'push', '--store', store, '--unpublished', '--path', themeDir];
+    // Run from the repo root and pass the theme as a relative path. Under a
+    // shell, Node joins arguments with spaces and does not quote them, so an
+    // absolute path like C:\Users\First Last\... would split into two
+    // arguments. A relative path cannot contain a space.
+    const args = ['theme', 'push', '--store', store, '--unpublished', '--path', 'theme'];
 
     // spawnSync has no timeout by default, so a CLI that stalls on a network
     // call blocks the agent indefinitely. Fail loudly instead.
     const status = run('shopify', args, {
+        cwd: root,
         env: { ...process.env, SHOPIFY_CLI_THEME_TOKEN: token, SHOPIFY_FLAG_FORCE: '1' },
         timeout: 5 * 60 * 1000,
     });
