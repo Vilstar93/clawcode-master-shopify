@@ -3,8 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Autonomous AI factory that builds complete, payment-ready Shopify stores from a single client config.",
+  "description": "AI-assisted factory that prepares Shopify store packages for Bulgarian firms, plus the list of what a human still has to do.",
   "scripts": {
+    "from-request": "node scripts/from-request.mjs",
     "validate": "node scripts/validate-config.mjs",
     "build": "node scripts/build-store.mjs",
     "products": "node scripts/gen-products.mjs",
@@ -14,6 +15,7 @@
     "push": "node scripts/push-theme.mjs",
     "import": "node scripts/import-products.mjs",
     "qa": "node scripts/qa-check.mjs",
+    "new-client": "node scripts/new-client.mjs",
     "test": "node --test scripts/lib/*.test.mjs"
   },
   "engines": {

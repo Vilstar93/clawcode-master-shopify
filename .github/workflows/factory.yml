@@ -115,3 +115,59 @@ jobs:
         run: |
           grep -q "ЧЕРНОВА" dist/example-firm/legal/obshti-usloviya.html
           grep -q "ЧЕРНОВА" dist/example-firm/legal/poveritelnost.html
+
+      - name: The whole pipeline runs from a portal request
+        run: |
+          # The operator's path is request -> config -> build -> QA. This drives
+          # it end to end so a break in the bridge is caught here, not tomorrow
+          # in front of a client.
+          node scripts/new-client.mjs examples/request.example.json
+          test -f config/primeren-klient.json
+          test -f dist/primeren-klient/products.csv
+          echo "request -> config -> build completed"
+
+      - name: QA refuses a store that still has placeholders
+        run: |
+          # A fresh client config is full of TODOs. QA must flag them, not pass
+          # them, or a store with a 0.00 product can be handed over as ready.
+          if node scripts/qa-check.mjs config/primeren-klient.json; then
+            echo "QA passed a store with unfilled placeholders"; exit 1
+          fi
+          node scripts/qa-check.mjs config/primeren-klient.json | grep -q "price above zero"
+          echo "QA blocked the placeholder store"
+
+      - name: A completed client config passes QA
+        run: |
+          # The mirror of the previous check: once the placeholders are gone,
+          # QA must be clean. Otherwise the block above is just noise.
+          node -e "
+            const fs = require('fs');
+            const p = 'config/primeren-klient.json';
+            const c = JSON.parse(fs.readFileSync(p, 'utf8'));
+            c.brand.tagline = 'Ръчно изработени продукти от България';
+            c.store.usps = ['Безплатна доставка над 100 лв.'];
+            c.collections = [{ handle: 'vsički', title: 'Всички', products: [c.products[0].handle] }];
+            c.integrations.ga4 = 'G-TEST00000';
+            Object.assign(c.products[0], {
+              title: 'Примерен продукт',
+              price: 24.9,
+              shortDescription: 'Кратко описание.',
+              description: 'Пълно описание на продукта.',
+              images: ['clients/primeren-klient/products/1-1.jpg'],
+            });
+            fs.writeFileSync(p, JSON.stringify(c, null, 2) + '\n');
+          "
+          node scripts/qa-check.mjs config/primeren-klient.json
+          echo "a completed config passes QA"
+
+      - name: No test artifacts are left behind
+        run: |
+          # The pipeline above writes a client config and a dist tree. Neither
+          # belongs in the repository.
+          if git ls-files --error-unmatch config/primeren-klient.json >/dev/null 2>&1; then
+            echo "a generated client config is tracked by git"; exit 1
+          fi
+          if ! grep -q '^config/\*\.json' .gitignore; then
+            echo "generated configs are not gitignored"; exit 1
+          fi
+          echo "generated configs are untracked and ignored"

@@ -38,38 +38,59 @@ remaining work is a short, listed checklist — not that the store is finished.
 ## How it works
 
 ```
-config/<client>.json  ->  scripts/build-store.mjs  ->  dist/<client>/
-     (you fill this)        (the agent runs this)       (push to Shopify)
+portal request        ->  scripts/new-client.mjs  ->  config/<client>.json
+(9 fields, from you)                                   (you complete it)
+                                                             |
+                                                             v
+                        dist/<client>/  <-  scripts/build-store.mjs
+                        (push to Shopify by hand)
 ```
 
-You supply one config file and the client's images. The agent reads `docs/`,
-follows `playbooks/00-full-store-build.md`, and runs `scripts/`.
+A portal request carries nine fields. A config needs about sixty, so
+`new-client.mjs` derives the rest: slug, Bulgarian defaults, address split, and
+placeholder products. Everything it invents is marked `TODO`, and `qa-check`
+refuses to pass a store that still contains one.
 
-**New here? Start with [`AGENT-BUILD.md`](AGENT-BUILD.md)** — how to stand up
-the autonomous agent, and how to get the most out of a ChatGPT Plus plan.
+**New here? Start with [`AGENT-BUILD.md`](AGENT-BUILD.md)** — how to stand up the
+agent, and how to get the most out of a ChatGPT Plus plan.
 
 Hosting and DNS are Shopify-only. No Cloudflare, no third-party proxy.
 See `docs/07-domain-and-hosting.md`.
 
 ## Quick start
 
+The normal path is one command per client. It takes a portal request and runs
+request -> config -> build -> QA:
+
 ```bash
-# 1. Try it with the example
+node scripts/new-client.mjs examples/request.example.json
+```
+
+That writes `config/<slug>.json` and `dist/<slug>/`, then prints the QA blockers
+and the exact fields that still need a real value. A fresh config is full of
+placeholders, so QA will refuse it until you fill them in — that is the point.
+Edit the config, re-run `build-store` and `qa-check`, and repeat until QA says
+`Ready for handoff`.
+
+`new-client.mjs` never touches Shopify. Pushing the theme and importing products
+need credentials and a real store, so they stay explicit, separate commands.
+
+```bash
+# Work with the example instead
 node scripts/validate-config.mjs config/client.example.json
 node scripts/build-store.mjs    config/client.example.json
 node scripts/qa-check.mjs       config/client.example.json
 
-# 2. Create a real client
+# No portal request? Copy the example and fill it in by hand
 cp config/client.example.json config/my-client.json
-#    ... fill it in ...
-node scripts/validate-config.mjs config/my-client.json
-node scripts/build-store.mjs    config/my-client.json
 ```
 
 ## Commands
 
 | Command | Purpose |
 | --- | --- |
+| `node scripts/new-client.mjs <request>` | One client, whole pipeline: request -> config -> build -> QA |
+| `node scripts/from-request.mjs <request>` | Just the request -> config step |
 | `node scripts/validate-config.mjs <config>` | Check config against schema |
 | `node scripts/build-store.mjs <config>` | Build the full store package |
 | `node scripts/gen-products.mjs <config>` | Generate import CSV only |

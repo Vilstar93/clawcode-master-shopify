@@ -22,8 +22,26 @@ export function qa(config, distDir) {
     const missingImages = config.products.filter((p) => !p.images?.length).map((p) => p.handle);
     add('every product has an image', missingImages.length === 0, missingImages.join(', '));
 
-    const missingDesc = config.products.filter((p) => !p.description).map((p) => p.handle);
+    // A description that is still a TODO placeholder is not a description. The
+    // old check only asked whether the field was non-empty, so a generated
+    // store could pass QA with "TODO: пълно описание" as the product copy.
+    const isPlaceholder = (value) => /^\s*TODO\b/i.test(String(value ?? ''));
+    const missingDesc = config.products.filter((p) => !p.description || isPlaceholder(p.description))
+        .map((p) => p.handle);
     add('every product has a description', missingDesc.length === 0, missingDesc.join(', '));
+
+    // A price of 0 is almost always an unfilled placeholder, and it ships a
+    // product that cannot be bought. Nothing checked price before.
+    const badPrices = config.products
+        .filter((p) => !(typeof p.price === 'number' && p.price > 0))
+        .map((p) => `${p.handle} (${p.price ?? 'missing'})`);
+    add('every product has a price above zero', badPrices.length === 0, badPrices.join(', '));
+
+    const todoTitles = config.products.filter((p) => isPlaceholder(p.title)).map((p) => p.handle);
+    add('no placeholder product titles', todoTitles.length === 0, todoTitles.join(', '));
+
+    const todoTagline = isPlaceholder(config.brand?.tagline);
+    add('brand tagline is real', !todoTagline, todoTagline ? 'still a placeholder' : '');
 
     add('contact email set', Boolean(config.client.email));
     add('legal entity set', Boolean(config.client.legalName && config.client.eik));

@@ -7,3 +7,9 @@ dist/
 .DS_Store
 clients/*/raw/
 clients/*/private/
+
+# Real client configs hold a firm's ЕИК, email and phone. Only the example and
+# the schema belong in the repository.
+config/*.json
+!config/client.example.json
+!config/client.schema.json
