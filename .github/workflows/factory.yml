@@ -26,9 +26,14 @@ jobs:
           # loaded that file, so following the instruction changed nothing.
           # Check both directions: every variable the code reads is documented,
           # and every Shopify variable that is documented is read.
+          #
+          # Test files are excluded: they set variables of their own (a TLS
+          # switch, for one) that no operator ever sets, and requiring those in
+          # .env.example would document them as configuration.
           fail=0
 
           for key in $(grep -rho "process\.env\.[A-Z_][A-Z0-9_]*" scripts/ --include=*.mjs \
+                       --exclude=*.test.mjs \
                        | sed 's/process\.env\.//' | sort -u); do
             if ! grep -q "^$key=" .env.example; then
               echo "Read by the code but not documented in .env.example: $key"
@@ -39,7 +44,7 @@ jobs:
           # The AI provider keys are documented as belonging to the agent, not
           # to these scripts, so they are deliberately not read here.
           for key in SHOPIFY_STORE_DOMAIN SHOPIFY_ADMIN_TOKEN SHOPIFY_CLI_THEME_TOKEN; do
-            if ! grep -rq "process\.env\.$key" scripts/ --include=*.mjs; then
+            if ! grep -rq "process\.env\.$key" scripts/ --include=*.mjs --exclude=*.test.mjs; then
               echo "Documented for the scripts but never read: $key"
               fail=1
             fi
@@ -69,11 +74,20 @@ jobs:
       - name: Credential scripts do not print stack traces
         run: |
           # A rejected token must read as an instruction, not a crash.
+          # The config names the store, so the .env domain has to agree with it
+          # or the domain guard answers first and the token path is never
+          # reached. test.myshopify.com is a real store that answers 401.
+          node -e "
+            const fs = require('fs');
+            const c = JSON.parse(fs.readFileSync('config/client.example.json', 'utf8'));
+            c.store.domain = 'test.myshopify.com';
+            fs.writeFileSync('/tmp/stacktrace-config.json', JSON.stringify(c, null, 2) + '\n');
+          "
           printf 'SHOPIFY_STORE_DOMAIN=test.myshopify.com\nSHOPIFY_ADMIN_TOKEN=fake\n' > .env
           set +e
-          out=$(node scripts/import-products.mjs config/client.example.json 2>&1)
+          out=$(node scripts/import-products.mjs /tmp/stacktrace-config.json 2>&1)
           set -e
-          rm -f .env
+          rm -f .env /tmp/stacktrace-config.json
           if echo "$out" | grep -q "at async file:"; then
             echo "import-products printed a stack trace:"; echo "$out"; exit 1
           fi
