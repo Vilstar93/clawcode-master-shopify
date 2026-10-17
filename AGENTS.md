@@ -46,6 +46,31 @@ Follow `playbooks/00-full-store-build.md`. The short version:
 9. Handoff     -> write summary, list manual steps for the human
 ```
 
+Steps 3 to 9 are one command once the store exists:
+
+```bash
+node scripts/deploy.mjs config/<client>.json
+```
+
+It runs build, QA, import, writes the variant ids back into the config,
+rebuilds, then pushes the theme. **QA gates the import**: a config with
+blockers stops before anything reaches Shopify, because a `TODO` product at
+`0.00` is junk in a real store. `--force` overrides; `--dry-run` shows the plan.
+
+**The config names the store, not `.env`.** One `.env` serves every client, so
+`SHOPIFY_STORE_DOMAIN` and `config.store.domain` must agree. `deploy` stops when
+they differ rather than risk writing one client's products into another's store.
+
+## CI
+
+`node --test scripts/lib/*.test.mjs` is not the whole check. The workflow has 18
+steps that build a store, run the pipeline from a portal request, and assert the
+guards refuse what they should. **Replay the workflow locally before pushing**
+(`pip install pyyaml`, then run each `run:` block in order). Four pushes in a row
+failed on steps that passed in isolation but not in sequence: the QA-gate step
+ran `deploy` twice, and the second run had no credentials, so it never reached
+the QA path it asserts on.
+
 ## Available skills
 
 See `openclaw/skills/`. Each skill has a `SKILL.md` with triggers and steps.
