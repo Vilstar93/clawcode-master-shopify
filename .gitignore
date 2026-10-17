@@ -9,6 +9,12 @@ dist/
 .DS_Store
 clients/*/raw/
 clients/*/private/
+# A real client's logo, hero and product photos are the client's assets, and the
+# config that references them is already gitignored. Only the example is tracked,
+# so a real client's brand does not end up in the repository history.
+clients/*/
+!clients/README.md
+!clients/example-firm/
 
 # Real client configs hold a firm's ЕИК, email and phone. Only the example and
 # the schema belong in the repository.

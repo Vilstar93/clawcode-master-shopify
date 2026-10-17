@@ -52,18 +52,23 @@ cannot do that part for them, and no API will.
 Shopify stopped showing a copyable admin token on 1 January 2026. The legacy
 "Develop apps" flow in the store admin no longer creates new apps. Where your
 credentials come from now depends on whose store you are deploying to, and the
-two cases are not interchangeable.
+two cases are not interchangeable. Which one you have decides the flow, and
+picking the wrong one fails with an error that does not name the cause.
 
-### Your own store: Client ID + secret
+### A dev store in your Dev Dashboard organization: Client ID + secret
 
-Use this for your own store and for any dev store created from the same Dev
-Dashboard. No token to copy; the code requests one and caches it for 24 hours.
+The client credentials grant works only here. A dev store created from the same
+Dev Dashboard as the app is in the same organization, so the request succeeds
+and there is no token to copy: the code asks for one and caches it for 24 hours.
 
 1. Open the [Dev Dashboard](https://dev.shopify.com/dashboard/) → **Apps** →
    **Create app**.
-2. Add a version with the scopes `write_products`, `read_products`,
-   `write_content`, `read_content`.
-3. Install the app on your store.
+2. Add a version with the scope `write_products`. That is the only one the
+   factory uses: the import calls `productSet` and nothing else. A write scope
+   already grants read, and extra scopes only widen what a leaked token can do.
+   If the app form asks for a redirect URL, any URL works — the client
+   credentials grant never redirects.
+3. Install the app on the dev store.
 4. **Settings** → copy the **Client ID** and **Client secret**.
 5. Put them in `.env`:
 
@@ -72,22 +77,37 @@ SHOPIFY_CLIENT_ID=...
 SHOPIFY_CLIENT_SECRET=...
 ```
 
-### A client's store: a stored token
+### Any real store, including a client's: the authorization code grant
 
-The client credentials grant only reaches stores in **the same Shopify
-organization as the app**. A client's store is not, and the request fails with
-`shop_not_permitted`. For those, use the authorization code grant and store the
-resulting token.
+A live store is **not** in the app's organization, even when you own it and the
+app is installed. The token endpoint then answers:
 
-1. In the Dev Dashboard, set the app's distribution to **custom distribution**
-   and install it on the client's store.
-2. Run the authorization code grant once to get a non-expiring token. The
-   official walkthrough is
-   [Authenticate a standalone app](https://shopify.dev/docs/apps/build/authentication-authorization/authenticate-standalone-apps).
-3. Put it in `.env` as `SHOPIFY_ADMIN_TOKEN`.
+```
+400 - Oauth error application_cannot_be_found
+Could not find Shopify API application with api_key
+```
 
-The store's own admin can also create an app for a single store and give you a
-token, if the merchant is willing to do that step.
+The store's OAuth service cannot see an app from another organization, so the
+request never reaches the shop check. This is not a setup mistake and nothing in
+the Dev Dashboard fixes it.
+
+Run the authorization code grant instead. It works for any store where the app
+is installed and someone can approve it, and the token it returns does not
+expire:
+
+```bash
+node scripts/shopify-auth.mjs
+```
+
+The script prints a URL. Open it, approve the app, and copy the address bar of
+the page you land on — the redirect goes to the app's registered URL, which is
+not a real page, so the page shows an error and the code is in its URL. Paste
+that back and the script verifies Shopify's signature, exchanges the code, checks
+the token against the store, and writes `SHOPIFY_ADMIN_TOKEN` to `.env`.
+
+Set the redirect URL in the app first: Dev Dashboard → the app → **URLs** →
+**Allowed redirection URL(s)**. The default `https://example.com/auth/callback`
+is fine; override with `SHOPIFY_REDIRECT_URI` if you registered something else.
 
 Never commit these. `.env` is gitignored.
 

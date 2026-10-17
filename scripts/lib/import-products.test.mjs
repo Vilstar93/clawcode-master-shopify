@@ -178,3 +178,66 @@ test('variantIdOf handles the shapes Shopify can return', () => {
     assert.equal(variantIdOf(null), undefined);
     assert.equal(variantIdOf({}), undefined);
 });
+
+test('the price is sent on the variant, not left off', async () => {
+    // Every product was created at zero because toProductSetInput never set a
+    // price. The mock server answered 200 regardless of the body, so the tests
+    // stayed green while the store got free products.
+    requests = [];
+    respond = () => ({ status: 200, json: productSetResponse('gid://shopify/ProductVariant/1') });
+    await importProducts(config, { domain: domain(), token: 'x' });
+    const { variants } = requests[0].body.variables.input;
+    assert.equal(variants.length, 1);
+    assert.equal(variants[0].price, '24.9');
+});
+
+test('variants are sent with the options they belong to', async () => {
+    // productSet rejects options without variants: "Variants input is required
+    // when updating product options". That is what a real import hit.
+    requests = [];
+    respond = () => ({ status: 200, json: productSetResponse('gid://shopify/ProductVariant/1') });
+    const withVariants = {
+        client: { displayName: 'Тест' },
+        products: [{
+            handle: 'svesht', title: 'Свещ', price: 49.9,
+            variants: [
+                { option: 'Цвят', value: 'Син', price: 49.9, sku: 'EX-BL' },
+                { option: 'Цвят', value: 'Червен', price: 59.9, sku: 'EX-RD' },
+            ],
+        }],
+    };
+    await importProducts(withVariants, { domain: domain(), token: 'x' });
+    const { variants, productOptions } = requests[0].body.variables.input;
+    assert.equal(productOptions[0].name, 'Цвят');
+    assert.deepEqual(productOptions[0].values.map((v) => v.name), ['Син', 'Червен']);
+    assert.equal(variants.length, 2);
+    assert.equal(variants[0].price, '49.9');
+    assert.equal(variants[1].price, '59.9', 'each variant keeps its own price');
+    assert.equal(variants[1].sku, 'EX-RD');
+    assert.equal(variants[0].optionValues[0].optionName, 'Цвят');
+});
+
+test('a product with no variants still gets one at the product price', async () => {
+    requests = [];
+    respond = () => ({ status: 200, json: productSetResponse('gid://shopify/ProductVariant/1') });
+    await importProducts(config, { domain: domain(), token: 'x' });
+    const { variants, productOptions } = requests[0].body.variables.input;
+    assert.equal(variants.length, 1);
+    assert.equal(variants[0].price, '24.9');
+    assert.equal(variants[0].optionValues[0].name, 'Default Title');
+    assert.equal(productOptions[0].values[0].name, 'Default Title');
+});
+
+test('a variant without its own price falls back to the product price', async () => {
+    requests = [];
+    respond = () => ({ status: 200, json: productSetResponse('gid://shopify/ProductVariant/1') });
+    const partial = {
+        client: { displayName: 'Тест' },
+        products: [{
+            handle: 'svesht', title: 'Свещ', price: 30,
+            variants: [{ option: 'Размер', value: 'S' }],
+        }],
+    };
+    await importProducts(partial, { domain: domain(), token: 'x' });
+    assert.equal(requests[0].body.variables.input.variants[0].price, '30');
+});

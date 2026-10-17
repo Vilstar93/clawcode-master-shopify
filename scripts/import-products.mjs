@@ -67,6 +67,27 @@ export function describeHttpError(status, domain, body) {
 }
 
 function toProductSetInput(p, vendor) {
+    // productSet requires the variants alongside the options. Sending options
+    // without variants is what makes an update fail with "Variants input is
+    // required when updating product options".
+    const hasVariants = Boolean(p.variants?.length);
+    const variants = hasVariants
+        ? p.variants.map((v) => {
+            const variant = {
+                optionValues: [{ optionName: v.option || 'Title', name: v.value }],
+                // The price lives on the variant, not on the product. Omitting
+                // it here is why every product was created at zero.
+                price: String(v.price ?? p.price ?? 0),
+            };
+            if (v.sku) variant.sku = v.sku;
+            return variant;
+        })
+        : [{
+            optionValues: [{ optionName: 'Title', name: 'Default Title' }],
+            price: String(p.price ?? 0),
+            ...(p.sku ? { sku: p.sku } : {}),
+        }];
+
     return {
         handle: p.handle,
         title: p.title,
@@ -75,9 +96,10 @@ function toProductSetInput(p, vendor) {
         productType: p.category || '',
         tags: p.tags || [],
         status: 'ACTIVE',
-        productOptions: p.variants?.length
+        productOptions: hasVariants
             ? [{ name: p.variants[0].option || 'Title', values: p.variants.map((v) => ({ name: v.value })) }]
-            : [{ name: 'Title', values: [{ name: 'Default Title' }] }]
+            : [{ name: 'Title', values: [{ name: 'Default Title' }] }],
+        variants,
     };
 }
 
