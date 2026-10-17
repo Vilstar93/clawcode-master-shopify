@@ -228,11 +228,18 @@ jobs:
             c.products[0].title = 'TODO продукт';
             fs.writeFileSync('config/primeren-klient.json', JSON.stringify(c, null, 2) + '\n');
           "
-          if SHOPIFY_STORE_DOMAIN=primeren-klient.myshopify.com SHOPIFY_ADMIN_TOKEN=shpat_x \
-             node scripts/deploy.mjs config/primeren-klient.json; then
-            echo "deploy imported a store QA rejects"; exit 1
+          export SHOPIFY_STORE_DOMAIN=primeren-klient.myshopify.com
+          export SHOPIFY_ADMIN_TOKEN=shpat_x
+          set +e
+          out=$(node scripts/deploy.mjs config/primeren-klient.json 2>&1)
+          status=$?
+          set -e
+          if [ "$status" -eq 0 ]; then
+            echo "deploy imported a store QA rejects:"; echo "$out"; exit 1
           fi
-          node scripts/deploy.mjs config/primeren-klient.json 2>&1 | grep -q "nothing was sent to Shopify"
+          if ! echo "$out" | grep -q "nothing was sent to Shopify"; then
+            echo "deploy refused, but not for the QA reason:"; echo "$out"; exit 1
+          fi
           echo "deploy refused the blocked import"
 
       - name: No test artifacts are left behind
