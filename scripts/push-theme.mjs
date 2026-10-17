@@ -6,12 +6,21 @@ import { existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadAndValidate } from './validate-config.mjs';
+import { loadEnv } from './lib/env.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
 function run(cmd, args, opts = {}) {
     const r = spawnSync(cmd, args, { stdio: 'inherit', shell: false, ...opts });
-    return r.status ?? 1;
+    // The CLI is not installed at all: say so rather than reporting exit 1.
+    if (r.error && r.error.code === 'ENOENT') {
+        console.error(`✗ ${cmd} is not installed or not on PATH.`);
+        process.exit(1);
+    }
+    // A timeout kills the child, leaving status null. Callers must be able to
+    // tell that apart from a real non-zero exit.
+    if (r.error && r.error.code === 'ETIMEDOUT') return null;
+    return r.status;
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
@@ -34,8 +43,31 @@ if (import.meta.url === `file://${process.argv[1]}`) {
         process.exit(1);
     }
 
+    loadEnv();
+
+    // Shopify CLI authenticates interactively by opening a browser. Run from an
+    // agent, that prompt is invisible and the process waits forever. Requiring a
+    // theme access token up front turns an indefinite hang into an instruction.
+    const token = process.env.SHOPIFY_CLI_THEME_TOKEN || process.env.SHOPIFY_ADMIN_TOKEN;
+    if (!token) {
+        console.error('✗ No theme token. Set SHOPIFY_CLI_THEME_TOKEN (or SHOPIFY_ADMIN_TOKEN) in .env.');
+        console.error('  Create one with:  npx shopify theme token');
+        process.exit(1);
+    }
+
     const store = config.store.domain;
     console.log(`→ pushing theme to ${store} (unpublished)`);
-    const args = ['shopify', 'theme', 'push', '--store', store, '--unpublished', '--path', themeDir];
-    process.exit(run('npx', args));
+    const args = ['theme', 'push', '--store', store, '--unpublished', '--path', themeDir];
+
+    // spawnSync has no timeout by default, so a CLI that stalls on a network
+    // call blocks the agent indefinitely. Fail loudly instead.
+    const status = run('shopify', args, {
+        env: { ...process.env, SHOPIFY_CLI_THEME_TOKEN: token, SHOPIFY_FLAG_FORCE: '1' },
+        timeout: 5 * 60 * 1000,
+    });
+    if (status === null) {
+        console.error('✗ Shopify CLI did not finish within 5 minutes.');
+        process.exit(1);
+    }
+    process.exit(status);
 }

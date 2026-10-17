@@ -20,6 +20,68 @@ jobs:
       - name: Unit tests (ЕИК and VIES)
         run: node --test scripts/lib/*.test.mjs
 
+      - name: Env vars and code agree
+        run: |
+          # The scripts told operators to put credentials in .env while nothing
+          # loaded that file, so following the instruction changed nothing.
+          # Check both directions: every variable the code reads is documented,
+          # and every Shopify variable that is documented is read.
+          fail=0
+
+          for key in $(grep -rho "process\.env\.[A-Z_][A-Z0-9_]*" scripts/ --include=*.mjs \
+                       | sed 's/process\.env\.//' | sort -u); do
+            if ! grep -q "^$key=" .env.example; then
+              echo "Read by the code but not documented in .env.example: $key"
+              fail=1
+            fi
+          done
+
+          # The AI provider keys are documented as belonging to the agent, not
+          # to these scripts, so they are deliberately not read here.
+          for key in SHOPIFY_STORE_DOMAIN SHOPIFY_ADMIN_TOKEN SHOPIFY_CLI_THEME_TOKEN; do
+            if ! grep -rq "process\.env\.$key" scripts/ --include=*.mjs; then
+              echo "Documented for the scripts but never read: $key"
+              fail=1
+            fi
+          done
+
+          exit $fail
+
+      - name: Credential scripts fail fast instead of hanging
+        run: |
+          # push-theme ran `npx shopify`, which downloads a package and then
+          # waits on an interactive login that never arrives in an agent. It
+          # hung indefinitely. Without a token it must now exit non-zero fast.
+          start=$(date +%s)
+          set +e
+          node scripts/push-theme.mjs config/client.example.json > /dev/null 2>&1
+          status=$?
+          set -e
+          elapsed=$(( $(date +%s) - start ))
+          if [ "$status" -eq 0 ]; then
+            echo "push-theme reported success with no credentials"; exit 1
+          fi
+          if [ "$elapsed" -gt 30 ]; then
+            echo "push-theme took ${elapsed}s without credentials; it should fail fast"; exit 1
+          fi
+          echo "push-theme failed fast in ${elapsed}s with status $status"
+
+      - name: Credential scripts do not print stack traces
+        run: |
+          # A rejected token must read as an instruction, not a crash.
+          printf 'SHOPIFY_STORE_DOMAIN=test.myshopify.com\nSHOPIFY_ADMIN_TOKEN=fake\n' > .env
+          set +e
+          out=$(node scripts/import-products.mjs config/client.example.json 2>&1)
+          set -e
+          rm -f .env
+          if echo "$out" | grep -q "at async file:"; then
+            echo "import-products printed a stack trace:"; echo "$out"; exit 1
+          fi
+          if ! echo "$out" | grep -q "SHOPIFY_ADMIN_TOKEN"; then
+            echo "The error does not name the variable to fix:"; echo "$out"; exit 1
+          fi
+          echo "import-products reports a rejected token clearly"
+
       - name: Build store package
         run: node scripts/build-store.mjs config/client.example.json
 

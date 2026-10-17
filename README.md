@@ -1,16 +1,39 @@
 # clawcode-master-shopify
 
-Autonomous AI factory that builds complete, payment-ready Shopify stores.
+AI-assisted factory that prepares Shopify store packages for Bulgarian firms.
 
-One command prompt with client information in. One working store out.
+One config file with client information in. One reviewable store package out,
+plus an explicit list of what a human still has to do.
 
 ## What this is
 
-This repo is the operating system for an OpenClaw AI agent that builds Shopify
-stores end to end: theme, products, collections, legal pages, shipping config,
-emails, and analytics.
+This repo is the operating system for an OpenClaw AI agent that assembles
+Shopify store packages: theme, products, collections, legal page drafts,
+shipping config, emails, and analytics wiring.
 
-It is not a store. It is the machinery that produces stores.
+It is not a store. It is the machinery that produces store packages.
+
+## What "done" means here — read this before quoting a client
+
+The build is automated. **Going live is not.** Every build ends with a handoff
+document listing the steps the agent cannot take, because each needs account
+access or human judgement. On the example config that list has 21 items,
+including:
+
+- enabling the payment provider in the Shopify admin
+- configuring shipping rates and carriers
+- reviewing the legal pages and removing the DRAFT stamp
+- confirming tax settings with an accountant
+- buying or connecting the domain
+- publishing the theme, after review
+- running one test order end to end
+
+A generated store is a **draft awaiting review**, never a live shop. `qa-check`
+refuses to call a package ready while a blocker is open, and the handoff
+document states the same verdict at the top.
+
+The realistic promise to a client is: the repetitive assembly is done and the
+remaining work is a short, listed checklist — not that the store is finished.
 
 ## How it works
 
